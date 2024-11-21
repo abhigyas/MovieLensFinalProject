@@ -6,27 +6,23 @@ df.head()
 from torch.utils.data import Dataset
 
 class MovieLensDataset(Dataset):
-    """
-    The Movie Lens Dataset class. This class prepares the dataset for training and validation.
-    """
+    
+    # The Movie Lens Dataset class. This class prepares the dataset for training and validation.
+    
     def __init__(self, users, movies, ratings):
-        """
-        Initializes the dataset object with user, movie, and rating data.
-        """
+        # Initializes the dataset object with user, movie, and rating data.
         self.users = users
         self.movies = movies
         self.ratings = ratings
 
     def __len__(self):
-        """
-        Returns the total number of samples in the dataset.
-        """
+        # Returns the total number of samples in the dataset.
         return len(self.users)
 
     def __getitem__(self, item):
-        """
-        Retrieves a sample from the dataset at the specified index.
-        """
+       
+        # Retrieves a sample from the dataset at the specified index.
+        
         users = self.users[item]
         movies = self.movies[item]
         ratings = self.ratings[item]
@@ -99,7 +95,7 @@ val_loader = DataLoader(df_val, batch_size=BATCH_SIZE, shuffle=True, num_workers
 #
 
 import sys
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import root_mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import DataLoader
@@ -213,5 +209,122 @@ with torch.no_grad():
         y_true.extend(ratings.cpu().numpy())
 
 # Calculate RMSE
-rms = mean_squared_error(y_true, y_pred, squared=False)
+rms = root_mean_squared_error(y_true, y_pred)
 print(f"RMSE: {rms:.4f}")
+
+def get_unwatched_movies(user_id, df_train):
+    user_rated_movies = set(df_train[df_train['userId'] == user_id]['movieId'].values)
+    all_movies = set(df_train['movieId'].unique())
+    return list(all_movies - user_rated_movies)
+
+def get_top_n_recommendations(model, user_id, n=10, df_train=df_train):
+    model.eval()
+    with torch.no_grad():
+        # Get unwatched movies
+        unwatched_movies = get_unwatched_movies(user_id, df_train)
+        if len(unwatched_movies) == 0:
+            return []
+        
+        # Convert to tensor format
+        user_tensor = torch.tensor([user_id] * len(unwatched_movies)).to(device)
+        movie_tensor = torch.tensor(unwatched_movies).to(device)
+        
+        # Get predictions
+        predictions = model(user_tensor, movie_tensor)
+        predictions = predictions.squeeze().cpu().numpy()
+        
+        # Get top N items
+        top_n_indices = np.argsort(predictions)[-n:][::-1]
+        recommended_movies = [unwatched_movies[i] for i in top_n_indices]
+        
+        return recommended_movies
+
+def calculate_precision_recall(recommendations, test_items):
+    if len(recommendations) == 0 or len(test_items) == 0:
+        return 0.0, 0.0
+    
+    true_positives = len(set(recommendations) & set(test_items))
+    precision = true_positives / len(recommendations)
+    recall = true_positives / len(test_items)
+    
+    return precision, recall
+
+def calculate_ndcg(recommendations, test_items, k=10):
+    recommendations = np.array(recommendations)
+    test_items = np.array(test_items)
+    if recommendations.size == 0 or test_items.size == 0:
+        return 0.0
+    
+    relevance = np.zeros(k)
+    for i, item in enumerate(recommendations[:k]):
+        if item in test_items:
+            relevance[i] = 1
+            
+    # Calculate DCG
+    dcg = np.sum(relevance / np.log2(np.arange(2, len(relevance) + 2)))
+    
+    # Calculate IDCG
+    ideal_relevance = np.zeros(k)
+    ideal_relevance[:min(k, len(test_items))] = 1
+    idcg = np.sum(ideal_relevance / np.log2(np.arange(2, len(ideal_relevance) + 2)))
+    
+    return dcg / idcg if idcg > 0 else 0.0
+
+# Example usage
+def evaluate_recommendations(model, df_train, df_val, n=10):
+    precisions = []
+    recalls = []
+    ndcgs = []
+    
+    unique_users = df_val['userId'].unique()
+    
+    for user_id in unique_users:
+        # Get recommendations
+        recommendations = get_top_n_recommendations(model, user_id, n, df_train)
+        
+        # Get ground truth from validation set
+        test_items = df_val[df_val['userId'] == user_id]['movieId'].values
+        
+        # Calculate metrics
+        precision, recall = calculate_precision_recall(recommendations, test_items)
+        ndcg = calculate_ndcg(recommendations, test_items, k=n)
+        
+        precisions.append(precision)
+        recalls.append(recall)
+        ndcgs.append(ndcg)
+    
+    return {
+        'precision': np.mean(precisions),
+        'recall': np.mean(recalls),
+        'ndcg': np.mean(ndcgs)
+    }
+
+# Run evaluation
+metrics = evaluate_recommendations(recommendation_model, df_train, df_val)
+print(f"\nEvaluation Metrics:")
+print(f"Precision@10: {metrics['precision']:.4f}")
+print(f"Recall@10: {metrics['recall']:.4f}")
+print(f"NDCG@10: {metrics['ndcg']:.4f}")
+
+# Load movies dataset
+movies_df = pd.read_csv("databases/ml-latest-small/movies.csv")
+
+def get_movie_titles(movie_ids, movies_df=movies_df):
+    # Convert encoded IDs back to original movie IDs
+    original_movie_ids = le_movie.inverse_transform(movie_ids)
+    # Get movie titles
+    movie_info = movies_df[movies_df['movieId'].isin(original_movie_ids)]
+    return movie_info[['movieId', 'title', 'genres']].values.tolist()
+
+# Example: Get recommendations for a sample user
+sample_user_id = df_train['userId'].iloc[0]  # Get first user as example
+print(f"\nGetting recommendations for user {sample_user_id}:")
+
+# Get top 10 recommendations
+recommended_movie_ids = get_top_n_recommendations(recommendation_model, sample_user_id, n=10)
+recommended_movies = get_movie_titles(recommended_movie_ids)
+
+print("\nTop 10 Recommended Movies:")
+print("-" * 80)
+for i, (movie_id, title, genres) in enumerate(recommended_movies, 1):
+    print(f"{i}. {title} ({genres})")
