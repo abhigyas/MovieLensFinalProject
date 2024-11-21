@@ -1,5 +1,6 @@
 import torch
 import pandas as pd
+import os
 df = pd.read_csv("databases/ml-latest-small/ratings.csv")
 df.head()
 from torch.utils.data import Dataset
@@ -139,116 +140,78 @@ val_dataset = MovieLensDataset(
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
 
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import torch
-import torch.nn as nn
+recommendation_model = RecommendationSystemModel(
+    num_users=len(le_user.classes_), 
+    num_movies=len(le_movie.classes_),
+    embedding_size=128,
+    hidden_dim=256,
+    dropout_rate=0.1,
+).to(device)
 
-class SVDRecommender(nn.Module):
-    def __init__(self, num_users, num_items, num_factors=100):
-        super(SVDRecommender, self).__init__()
-        self.user_factors = nn.Embedding(num_users, num_factors)
-        self.item_factors = nn.Embedding(num_items, num_factors)
-        self.user_biases = nn.Embedding(num_users, 1)
-        self.item_biases = nn.Embedding(num_items, 1)
-        self.global_bias = nn.Parameter(torch.zeros(1))
-        
-    def forward(self, user_ids, item_ids):
-        user_vec = self.user_factors(user_ids)
-        item_vec = self.item_factors(item_ids)
-        user_bias = self.user_biases(user_ids).squeeze()
-        item_bias = self.item_biases(item_ids).squeeze()
-        dot = (user_vec * item_vec).sum(1)
-        return dot + user_bias + item_bias + self.global_bias
+optimizer = torch.optim.Adam(recommendation_model.parameters(), lr=1e-3)
+loss_func = nn.MSELoss()
 
-def train_model(model, train_loader, val_loader, epochs=20, lr=0.001, device="cuda"):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.MSELoss()
-    
-    for epoch in range(epochs):
-        model.train()
-        total_loss = 0
-        for batch in train_loader:
-            user_ids = batch["users"].to(device)
-            movie_ids = batch["movies"].to(device)
-            ratings = batch["ratings"].to(device)
-            
-            predictions = model(user_ids, movie_ids)
-            loss = criterion(predictions, ratings)
-            
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-            
-        # Validation
-        model.eval()
-        val_loss = 0
-        with torch.no_grad():
-            for batch in val_loader:
-                user_ids = batch["users"].to(device)
-                movie_ids = batch["movies"].to(device)
-                ratings = batch["ratings"].to(device)
-                
-                predictions = model(user_ids, movie_ids)
-                val_loss += criterion(predictions, ratings).item()
-                
-        print(f"Epoch {epoch+1}/{epochs}")
-        print(f"Training Loss: {total_loss/len(train_loader):.4f}")
-        print(f"Validation Loss: {val_loss/len(val_loader):.4f}")
+EPOCHS = 10
 
-def get_top_k_recommendations(model, user_id, train_data, num_items, k=10, device="cuda"):
-    model.eval()
-    # Get items the user hasn't rated
-    user_items = set(train_data[train_data['userId'] == user_id]['movieId'])
-    all_items = set(range(num_items))
-    items_to_predict = list(all_items - user_items)
-    
-    # Predict ratings for all unrated items
-    with torch.no_grad():
-        user_tensor = torch.LongTensor([user_id] * len(items_to_predict)).to(device)
-        item_tensor = torch.LongTensor(items_to_predict).to(device)
-        predictions = model(user_tensor, item_tensor)
-        
-    # Get top k items
-    _, indices = torch.topk(predictions, k)
-    return [items_to_predict[idx] for idx in indices.cpu().numpy()]
+# Function to log progress
+def log_progress(epoch, step, total_loss, log_progress_step, data_size, losses):
+    avg_loss = total_loss / log_progress_step
+    sys.stderr.write(f"\rEpoch {epoch}, Step {step}/{data_size}, Loss: {avg_loss:.6f}")
+    sys.stderr.flush()
 
-# Usage
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = SVDRecommender(num_users=len(le_user.classes_), 
-                      num_items=len(le_movie.classes_)).to(device)
+total_loss = 0
+log_progress_step = 100
+losses = []
+train_dataset_size = len(train_dataset)
+print(f"Training on {train_dataset_size} samples...")
 
-# Train the model
-train_model(model, train_loader, val_loader, epochs=20, device=device)
+recommendation_model.train()
+for e in range(EPOCHS):
+    step_count = 0  # Reset step count at the beginning of each epoch
+    for i, train_data in enumerate(train_loader):
+        output = recommendation_model(
+            train_data["users"].to(device), train_data["movies"].to(device)
+        )
+        # Reshape the model output to match the target's shape
+        output = output.squeeze()  # Removes the singleton dimension
+        ratings = (
+            train_data["ratings"].to(torch.float32).to(device)
+        )  # Assuming ratings is already 1D
 
-# Evaluate
-model.eval()
-predictions = []
-true_ratings = []
+        loss = loss_func(output, ratings)
+        total_loss += loss.sum().item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # Increment step count by the actual size of the batch
+        step_count += len(train_data["users"])
+
+        # Check if it's time to log progress
+        if (
+            step_count % log_progress_step == 0 or i == len(train_loader) - 1
+        ):  # Log at the end of each epoch
+            log_progress(
+                e, step_count, total_loss, log_progress_step, train_dataset_size, losses
+            )
+            total_loss = 0
+    print()  # Move to the next line after each epoch
+
+# Evaluation
+y_pred = []
+y_true = []
+
+recommendation_model.eval()
 
 with torch.no_grad():
-    for batch in val_loader:
-        user_ids = batch["users"].to(device)
-        movie_ids = batch["movies"].to(device)
-        ratings = batch["ratings"].to(device)
-        
-        pred = model(user_ids, movie_ids)
-        predictions.extend(pred.cpu().numpy())
-        true_ratings.extend(ratings.cpu().numpy())
+    for i, valid_data in enumerate(val_loader):
+        output = recommendation_model(
+            valid_data["users"].to(device), valid_data["movies"].to(device)
+        )
+        ratings = valid_data["ratings"].to(device)
+        y_pred.extend(output.cpu().numpy())
+        y_true.extend(ratings.cpu().numpy())
 
-# Calculate metrics
-mae = mean_absolute_error(true_ratings, predictions)
-rmse = mean_squared_error(true_ratings, predictions, squared=False)
-print(f"MAE: {mae:.4f}")
-print(f"RMSE: {rmse:.4f}")
-
-# Generate recommendations for a sample user
-sample_user_id = 0
-top_10_movies = get_top_k_recommendations(model, sample_user_id, df_train, 
-                                        len(le_movie.classes_), k=10, device=device)
-print(f"Top 10 recommendations for user {sample_user_id}:")
-print(top_10_movies)
+# Calculate RMSE
+rms = mean_squared_error(y_true, y_pred, squared=False)
+print(f"RMSE: {rms:.4f}")
