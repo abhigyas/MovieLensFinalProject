@@ -34,53 +34,69 @@ class MovieLensDataset(Dataset):
         }
 import numpy as np
 import torch.nn as nn
-class RecommendationSystemModel(nn.Module):
+class ImprovedRecommendationModel(nn.Module):
     def __init__(
         self,
         num_users,
         num_movies,
         embedding_size=256,
-        hidden_dim=256,
+        hidden_dims=[512, 256, 128],
         dropout_rate=0.2,
     ):
-        super(RecommendationSystemModel, self).__init__()
+        super(ImprovedRecommendationModel, self).__init__()
         self.num_users = num_users
         self.num_movies = num_movies
         self.embedding_size = embedding_size
-        self.hidden_dim = hidden_dim
 
         # Embedding layers
-        self.user_embedding = nn.Embedding(
-            num_embeddings=self.num_users, embedding_dim=self.embedding_size
-        )
-        self.movie_embedding = nn.Embedding(
-            num_embeddings=self.num_movies, embedding_dim=self.embedding_size
-        )
+        self.user_embedding = nn.Embedding(num_users, embedding_size)
+        self.movie_embedding = nn.Embedding(num_movies, embedding_size)
 
-        # Hidden layers
-        self.fc1 = nn.Linear(2 * self.embedding_size, self.hidden_dim)
-        self.fc2 = nn.Linear(self.hidden_dim, 1)
+        # Batch normalization for embeddings
+        self.bn_user = nn.BatchNorm1d(embedding_size)
+        self.bn_movie = nn.BatchNorm1d(embedding_size)
 
-        # Dropout layer
-        self.dropout = nn.Dropout(p=dropout_rate)
+        # Build MLP layers with residual connections
+        layers = []
+        input_dim = 2 * embedding_size
+        for hidden_dim in hidden_dims:
+            layers.extend([
+                nn.Linear(input_dim, hidden_dim),
+                nn.BatchNorm1d(hidden_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout_rate)
+            ])
+            input_dim = hidden_dim
 
-        # Activation function
-        self.relu = nn.ReLU()
+        self.mlp = nn.Sequential(*layers)
+        self.final = nn.Linear(hidden_dims[-1], 1)
+        
+        # Residual connection
+        self.residual = nn.Linear(2 * embedding_size, 1)
 
     def forward(self, users, movies):
-        # Embeddings
+        # Get embeddings
         user_embedded = self.user_embedding(users)
         movie_embedded = self.movie_embedding(movies)
+        
+        # Apply batch normalization
+        user_embedded = self.bn_user(user_embedded)
+        movie_embedded = self.bn_movie(movie_embedded)
 
-        # Concatenate user and movie embeddings
+        # Concatenate
         combined = torch.cat([user_embedded, movie_embedded], dim=1)
-
-        # Pass through hidden layers with ReLU activation and dropout
-        x = self.relu(self.fc1(combined))
-        x = self.dropout(x)
-        output = self.fc2(x)
-
-        return output
+        
+        # Main network path
+        x = self.mlp(combined)
+        main_output = self.final(x)
+        
+        # Residual connection
+        res_output = self.residual(combined)
+        
+        # Combine main and residual paths
+        output = main_output + res_output
+        
+        return output.squeeze()
 from sklearn import model_selection
 
 df_train, df_val = model_selection.train_test_split(
@@ -136,12 +152,12 @@ val_dataset = MovieLensDataset(
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
 
-recommendation_model = RecommendationSystemModel(
+recommendation_model = ImprovedRecommendationModel(
     num_users=len(le_user.classes_), 
     num_movies=len(le_movie.classes_),
-    embedding_size=128,
-    hidden_dim=256,
-    dropout_rate=0.1,
+    embedding_size=256,
+    hidden_dims=[512, 256, 128],
+    dropout_rate=0.2
 ).to(device)
 
 optimizer = torch.optim.Adam(recommendation_model.parameters(), lr=1e-3)
