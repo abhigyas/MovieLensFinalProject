@@ -9,9 +9,13 @@ import torch.nn as nn
 from sklearn.metrics import precision_score, recall_score
 
 def calculate_rmse(pred, true):
+    # Squeeze pred to match true's dimensions
+    pred = pred.squeeze()
     return torch.sqrt(nn.MSELoss()(pred, true)).item()
 
 def calculate_mae(pred, true):
+    # Squeeze pred to match true's dimensions
+    pred = pred.squeeze()
     return nn.L1Loss()(pred, true).item()
 
 def calculate_precision_recall(interaction_pred, label_true, threshold=0.5):
@@ -179,7 +183,7 @@ def train_model(model, train_loader, val_loader, epochs=15, device="cuda"):
     )
 
     best_val_loss = float('inf')
-    patience = 10
+    patience = 5
     patience_counter = 0
 
     for epoch in range(epochs):
@@ -253,6 +257,59 @@ def prepare_data(df):
     balanced_df = pd.concat([positive_samples, negative_samples])
     return balanced_df
 
+def get_predictions_for_user(user_id, model_path, df, le_user, le_movie):
+    """
+    Get predictions for a specific user using a trained model
+    Args:
+        user_id: User ID to get predictions for
+        model_path: Path to saved model weights
+        df: DataFrame containing movie data
+        le_user: Fitted LabelEncoder for users
+        le_movie: Fitted LabelEncoder for movies
+    Returns:
+        DataFrame with movie predictions
+    """
+    # Initialize model with same architecture as training
+    model = DeepRecommenderModel(
+        num_users=len(le_user.classes_),
+        num_movies=len(le_movie.classes_),
+        embedding_dim=128
+    )
+    
+    # Load saved model weights
+    try:
+        model.load_state_dict(torch.load(model_path, weights_only=True))
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Model file not found at {model_path}")
+        
+    # Move model to same device as training
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    model.eval()
+    
+    # Get unique movies
+    movies = df['movieId'].unique()
+    
+    # Transform IDs using label encoders
+    encoded_user_id = le_user.transform([user_id])[0]
+    encoded_movies = le_movie.transform(movies)
+    
+    # Create tensors for prediction
+    user_ids = torch.full((len(movies),), encoded_user_id)
+    movie_ids = torch.tensor(encoded_movies)
+    
+    # Get predictions
+    with torch.no_grad():
+        rating_pred, _ = model(user_ids.to(device), movie_ids.to(device))
+    
+    # Create results dataframe
+    results_df = pd.DataFrame({
+        'movieId': movies,
+        'predicted_rating': rating_pred.cpu().numpy().squeeze()
+    })
+    
+    return results_df.sort_values('predicted_rating', ascending=False)
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -316,5 +373,9 @@ def main():
     # Train model
     train_model(model, train_loader, val_loader, epochs=15, device=device)
 
+    # After training is complete:
+    user_id_20 = le_user.transform([20])[0]  # Get encoded value for user 20
+    predictions = get_predictions_for_user(user_id_20, 'best_model.pth', df, le_user, le_movie)
+    print(predictions.head())
 if __name__ == "__main__":
     main()
