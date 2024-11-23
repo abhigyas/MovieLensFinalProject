@@ -25,6 +25,35 @@ def calculate_precision_recall(interaction_pred, label_true, threshold=0.5):
     recall = recall_score(true_labels, pred_labels, zero_division=0)
     return precision, recall
 
+def calculate_f_measure(precision, recall):
+    """Calculate F1 score from precision and recall"""
+    if precision + recall == 0:
+        return 0
+    return 2 * (precision * recall) / (precision + recall)
+
+def calculate_ndcg(predictions, true_items, k=10):
+    """
+    Calculate Normalized Discounted Cumulative Gain
+    Args:
+        predictions: List of predicted item IDs
+        true_items: List of true relevant item IDs
+        k: Number of items to consider
+    """
+    dcg = 0
+    idcg = 0
+    
+    # Calculate DCG
+    for i, item_id in enumerate(predictions[:k]):
+        if item_id in true_items:
+            rel = 1
+            dcg += rel / np.log2(i + 2)
+    
+    # Calculate IDCG
+    for i in range(min(len(true_items), k)):
+        idcg += 1 / np.log2(i + 2)
+    
+    return dcg / idcg if idcg > 0 else 0
+
 class BalancedMovieLensDataset(Dataset):
     def __init__(self, users, movies, ratings, transform=None):
         self.users = users
@@ -153,7 +182,8 @@ def custom_loss(rating_pred, interaction_pred, rating_true, label_true, alpha=0.
 
 def evaluate_model(model, dataloader, device):
     model.eval()
-    val_loss = rmse = mae = precision = recall = 0
+    metrics = {'val_loss': 0, 'rmse': 0, 'mae': 0, 
+               'precision': 0, 'recall': 0, 'f1': 0, 'ndcg': 0}
     
     with torch.no_grad():
         for batch in dataloader:
@@ -163,17 +193,21 @@ def evaluate_model(model, dataloader, device):
             labels = batch["labels"].to(device)
 
             rating_pred, interaction_pred = model(users, movies)
-            loss = custom_loss(rating_pred, interaction_pred, ratings, labels)
-            val_loss += loss.item()
+            
+            # Calculate existing metrics
+            metrics['val_loss'] += custom_loss(rating_pred, interaction_pred, ratings, labels).item()
+            metrics['rmse'] += calculate_rmse(rating_pred, ratings)
+            metrics['mae'] += calculate_mae(rating_pred, ratings)
+            
+            # Calculate new metrics
+            prec, rec = calculate_precision_recall(interaction_pred, labels)
+            metrics['precision'] += prec
+            metrics['recall'] += rec
+            metrics['f1'] += calculate_f_measure(prec, rec)
 
-            rmse += calculate_rmse(rating_pred, ratings)
-            mae += calculate_mae(rating_pred, ratings)
-            batch_precision, batch_recall = calculate_precision_recall(interaction_pred, labels)
-            precision += batch_precision
-            recall += batch_recall
-
+    # Average metrics
     n = len(dataloader)
-    return (val_loss/n, rmse/n, mae/n, precision/n, recall/n)
+    return {k: v/n for k, v in metrics.items()}
 
 def train_model(model, train_loader, val_loader, epochs=15, device="cuda"):
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
@@ -209,16 +243,17 @@ def train_model(model, train_loader, val_loader, epochs=15, device="cuda"):
         
         avg_train_loss = total_loss / len(train_loader)
         
-        model.eval()
-        val_loss, rmse, mae, precision, recall = evaluate_model(model, val_loader, device)
+        # Get evaluation metrics
+        metrics = evaluate_model(model, val_loader, device)
         
         print(f"\nEpoch {epoch+1}/{epochs}")
         print(f"Average Training Loss: {avg_train_loss:.4f}")
-        print(f"Validation RMSE: {rmse:.4f}, MAE: {mae:.4f}")
-        print(f"Validation Precision: {precision:.4f}, Recall: {recall:.4f}")
+        print(f"Validation RMSE: {metrics['rmse']:.4f}, MAE: {metrics['mae']:.4f}")
+        print(f"Validation Precision: {metrics['precision']:.4f}, Recall: {metrics['recall']:.4f}")
+        print(f"Validation F1: {metrics['f1']:.4f}, NDCG: {metrics['ndcg']:.4f}")
 
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if metrics['val_loss'] < best_val_loss:
+            best_val_loss = metrics['val_loss']
             torch.save(model.state_dict(), 'best_model.pth')
             patience_counter = 0
         else:
@@ -309,6 +344,72 @@ def get_predictions_for_user(user_id, model_path, df, le_user, le_movie):
     })
     
     return results_df.sort_values('predicted_rating', ascending=False)
+
+def get_top_n_recommendations(model, user_id, movie_ids, n=10, device='cuda'):
+    
+    # Get top N movie recommendations for a user
+    # Args:
+    #     model: Trained model
+    #     user_id: Encoded user ID
+    #     movie_ids: List of encoded movie IDs
+    #     n: Number of recommendations
+    #     device: Computing device
+    
+    model.eval()
+    with torch.no_grad():
+        # Create tensors for all movies for this user
+        users = torch.full((len(movie_ids),), user_id, device=device)
+        movies = torch.tensor(movie_ids, device=device)
+        
+        # Get predictions
+        rating_preds, _ = model(users, movies)
+        
+        # Get top N movies
+        top_n_indices = rating_preds.squeeze().argsort(descending=True)[:n]
+        top_n_movies = movie_ids[top_n_indices.cpu()]
+        top_n_scores = rating_preds.squeeze()[top_n_indices].cpu()
+        
+        return top_n_movies, top_n_scores
+
+def evaluate_recommendations(model, test_data, movie_ids, k=10, device='cuda'):
+    # Evaluate recommendations using multiple metrics
+    # Args:
+    #     model: Trained model
+    #     test_data: Test dataset
+    #     movie_ids: List of all movie IDs
+    #     k: Number of recommendations to evaluate
+    #     device: Computing device
+    precision_list = []
+    recall_list = []
+    f1_list = []
+    ndcg_list = []
+    
+    # Group test data by user
+    user_items = {}
+    for user, items in test_data.groupby('userId'):
+        user_items[user] = set(items[items['rating'] >= 4]['movieId'])
+    
+    for user_id, true_items in user_items.items():
+        # Get recommendations
+        rec_items, _ = get_top_n_recommendations(model, user_id, movie_ids, n=k, device=device)
+        rec_items = set(rec_items.tolist())
+        
+        # Calculate metrics
+        hits = len(rec_items & true_items)
+        precision = hits / k if k > 0 else 0
+        recall = hits / len(true_items) if true_items else 0
+        
+        precision_list.append(precision)
+        recall_list.append(recall)
+        f1_list.append(calculate_f_measure(precision, recall))
+        ndcg_list.append(calculate_ndcg(list(rec_items), list(true_items), k))
+    
+    return {
+        'precision': np.mean(precision_list),
+        'recall': np.mean(recall_list),
+        'f1': np.mean(f1_list),
+        'ndcg': np.mean(ndcg_list)
+    }
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
