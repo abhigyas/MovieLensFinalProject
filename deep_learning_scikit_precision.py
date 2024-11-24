@@ -141,6 +141,35 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     
     return train_losses, val_losses
 
+def calculate_ndcg(true_ratings, predicted_ratings, k=10):
+    """
+    Calculate NDCG@k for a list of predictions
+    
+    Args:
+        true_ratings: List of true ratings
+        predicted_ratings: List of predicted ratings
+        k: Number of items to consider
+    """
+    # Sort predictions and get top k indices
+    top_k_indices = np.argsort(predicted_ratings)[-k:][::-1]
+    
+    # Get DCG
+    dcg = 0
+    for i, idx in enumerate(top_k_indices):
+        rel = true_ratings[idx]
+        dcg += (2**rel - 1) / np.log2(i + 2)  # i+2 because i starts from 0
+    
+    # Get IDCG (sort true ratings in descending order)
+    ideal_order = np.argsort(true_ratings)[-k:][::-1]
+    idcg = 0
+    for i, idx in enumerate(ideal_order):
+        rel = true_ratings[idx]
+        idcg += (2**rel - 1) / np.log2(i + 2)
+    
+    # Calculate NDCG
+    ndcg = dcg / idcg if idcg > 0 else 0
+    return ndcg
+
 def calculate_metrics(model, val_loader, device):
     model.eval()
     predictions = []
@@ -162,12 +191,13 @@ def calculate_metrics(model, val_loader, device):
             predictions.extend(scaled_output.cpu().numpy())
             actuals.extend(ratings.cpu().numpy())
             
-            # Store test items and predictions per user
-            for user, movie, pred in zip(users.cpu().numpy(), 
-                                       movies.cpu().numpy(), 
-                                       scaled_output.cpu().numpy()):
+            # Store both predicted and true ratings
+            for user, movie, pred, true in zip(users.cpu().numpy(), 
+                                             movies.cpu().numpy(),
+                                             scaled_output.cpu().numpy(),
+                                             ratings.cpu().numpy()):
                 user_test_items[user].add(movie)
-                user_recommendations[user].append((movie, pred))
+                user_recommendations[user].append((movie, pred, true))
     
     # Calculate RMSE
     rmse = root_mean_squared_error(actuals, predictions)
@@ -198,7 +228,22 @@ def calculate_metrics(model, val_loader, device):
     # Calculate F-measure
     f_measure = 2 * avg_precision * avg_recall / (avg_precision + avg_recall) if (avg_precision + avg_recall) > 0 else 0
     
-    return rmse, avg_precision, avg_recall, f_measure
+    ndcg_scores = []
+    for user_id in user_test_items.keys():
+        user_recs = user_recommendations[user_id]
+        # Sort by predicted ratings
+        user_recs.sort(key=lambda x: x[1], reverse=True)
+        
+        # Get aligned predicted and true ratings
+        pred_ratings = np.array([pred for _, pred, _ in user_recs[:10]])
+        true_ratings = np.array([true for _, _, true in user_recs[:10]])
+        
+        ndcg = calculate_ndcg(true_ratings, pred_ratings, k=10)
+        ndcg_scores.append(ndcg)
+    
+    avg_ndcg = np.mean(ndcg_scores)
+    
+    return rmse, avg_precision, avg_recall, f_measure, avg_ndcg
 
 def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
     # Args:
@@ -257,7 +302,6 @@ def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder
             movie_info = movie_info.iloc[0]
             recommended_movies.append({
                 'title': movie_info['title'],
-                'genres': movie_info['genres'],
                 'predicted_rating': pred_rating
             })
     
@@ -323,18 +367,21 @@ def main():
     
     # Calculate metrics
     print("\nCalculating metrics...")
-    rmse, precision, recall, f_measure = calculate_metrics(model, val_loader, device)
+    rmse, precision, recall, f_measure, ndcg = calculate_metrics(model, val_loader, device)
     print(f"RMSE: {rmse:.4f}")
     print(f"Precision@10: {precision:.4f}")
     print(f"Recall@10: {recall:.4f}")
     print(f"F-measure: {f_measure:.4f}")
+    print(f"NDCG@10: {ndcg:.4f}")
     
-    # Generate sample recommendations
     print("\nGenerating sample recommendations...")
     sample_user_id = 1
     movie_ids = ratings_df['movieId'].unique()
+    
+    # Get recommendations once
     recommendations = recommend_movies(model, sample_user_id, movie_ids, movies_df, device, movie_encoder)
     
+    # Print recommendations once in a clear format
     print(f"\nTop 10 recommended movies for user {sample_user_id}:")
     for i, movie in enumerate(recommendations, 1):
         print(f"{i}. {movie['title']} - Predicted rating: {movie['predicted_rating']:.2f}")
