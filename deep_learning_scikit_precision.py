@@ -195,7 +195,10 @@ def calculate_metrics(model, val_loader, device):
     avg_precision = np.mean(precisions)
     avg_recall = np.mean(recalls)
     
-    return rmse, avg_precision, avg_recall
+    # Calculate F-measure
+    f_measure = 2 * avg_precision * avg_recall / (avg_precision + avg_recall) if (avg_precision + avg_recall) > 0 else 0
+    
+    return rmse, avg_precision, avg_recall, f_measure
 
 def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
     # Args:
@@ -320,10 +323,11 @@ def main():
     
     # Calculate metrics
     print("\nCalculating metrics...")
-    rmse, precision, recall = calculate_metrics(model, val_loader, device)
+    rmse, precision, recall, f_measure = calculate_metrics(model, val_loader, device)
     print(f"RMSE: {rmse:.4f}")
     print(f"Precision@10: {precision:.4f}")
     print(f"Recall@10: {recall:.4f}")
+    print(f"F-measure: {f_measure:.4f}")
     
     # Generate sample recommendations
     print("\nGenerating sample recommendations...")
