@@ -101,7 +101,13 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-    scaler = GradScaler()  # For mixed precision training
+    
+    # Only use GradScaler when CUDA is available
+    use_mixed_precision = torch.cuda.is_available()
+    scaler = torch.amp.GradScaler('cuda') if use_mixed_precision else None
+    
+    train_losses = []
+    val_losses = []
     
     for epoch in range(epochs):
         model.train()
@@ -112,18 +118,48 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
             movies = batch["movies"].to(device, non_blocking=True)
             ratings = batch["ratings"].to(device, non_blocking=True)
             
-            optimizer.zero_grad(set_to_none=True)  # Faster than zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             
-            # Use mixed precision training
-            with autocast():
+            if use_mixed_precision:
+                with torch.amp.autocast('cuda'):
+                    predictions = model(users, movies)
+                    loss = criterion(predictions * 5.0, ratings)
+                
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
                 predictions = model(users, movies)
                 loss = criterion(predictions * 5.0, ratings)
-            
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+                loss.backward()
+                optimizer.step()
             
             total_loss += loss.item()
+        
+        # Calculate average loss for epoch
+        avg_loss = total_loss / len(train_loader)
+        train_losses.append(avg_loss)
+        
+        # Validation phase
+        model.eval()
+        val_loss = 0
+        with torch.no_grad():
+            for batch in val_loader:
+                users = batch["users"].to(device)
+                movies = batch["movies"].to(device)
+                ratings = batch["ratings"].to(device)
+                
+                predictions = model(users, movies)
+                loss = criterion(predictions * 5.0, ratings)
+                val_loss += loss.item()
+        
+        avg_val_loss = val_loss / len(val_loader)
+        val_losses.append(avg_val_loss)
+        
+        scheduler.step(avg_val_loss)
+        print(f'Epoch {epoch+1}/{epochs}: train_loss={avg_loss:.4f}, val_loss={avg_val_loss:.4f}')
+    
+    return train_losses, val_losses
 
 @jit(nopython=True)
 def calculate_ndcg_fast(true_ratings, predicted_ratings, k=10):
