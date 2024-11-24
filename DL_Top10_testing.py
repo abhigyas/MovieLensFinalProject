@@ -141,7 +141,16 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     
     return train_losses, val_losses
 
-def calculate_metrics(model, val_loader, device):
+def calculate_precision(user_ratings, val_df, movie_encoder, k=10):
+    user_ratings.sort(key=lambda x: x[0], reverse=True)
+    recommended_movies = [movie_encoder.inverse_transform([movie_id])[0] for _, movie_id, _ in user_ratings[:k]]
+    user_id = user_ratings[0][2]  # Assuming user_id is the same for all ratings in user_ratings
+    actual_movies = val_df[val_df['userId'] == user_id]['movieId'].tolist()
+    n_recommended_and_watched = sum(movie in actual_movies for movie in recommended_movies)
+    precision = n_recommended_and_watched / k if k != 0 else 1
+    return precision
+
+def calculate_metrics(model, val_loader, device, val_df, movie_encoder):
     model.eval()
     predictions = []
     actuals = []
@@ -160,37 +169,23 @@ def calculate_metrics(model, val_loader, device):
             predictions.extend(scaled_output.cpu().numpy())
             actuals.extend(ratings.cpu().numpy())
             
-            # Store predictions for precision/recall calculation
-            for user, pred, true in zip(users, scaled_output, ratings):
-                user_ratings_comparison[user.item()].append((pred.item(), true.item()))
+            # Store predictions for precision calculation
+            for user, movie, pred, true in zip(users, movies, scaled_output, ratings):
+                user_ratings_comparison[user.item()].append((pred.item(), movie.item(), user.item()))
     
     # Calculate RMSE
     rmse = root_mean_squared_error(actuals, predictions)
     
-    # Calculate Precision and Recall@k
-    def calculate_precision_recall(user_ratings, k=10, threshold=3.5):
-        user_ratings.sort(key=lambda x: x[0], reverse=True)
-        n_rel = sum(true_r >= threshold for _, true_r in user_ratings)
-        n_rec_k = sum(est >= threshold for est, _ in user_ratings[:k])
-        n_rel_and_rec_k = sum((true_r >= threshold) and (est >= threshold) 
-                             for est, true_r in user_ratings[:k])
-        
-        precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
-        recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
-        return precision, recall
-    
+    # Calculate Precision
     precisions = []
-    recalls = []
     
     for user_ratings in user_ratings_comparison.values():
-        p, r = calculate_precision_recall(user_ratings)
+        p = calculate_precision(user_ratings, val_df, movie_encoder)
         precisions.append(p)
-        recalls.append(r)
     
     avg_precision = np.mean(precisions)
-    avg_recall = np.mean(recalls)
     
-    return rmse, avg_precision, avg_recall
+    return rmse, avg_precision
 
 def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder, top_k=10):
     """
@@ -295,10 +290,9 @@ def main():
     
     # Calculate metrics
     print("\nCalculating metrics...")
-    rmse, precision, recall = calculate_metrics(model, val_loader, device)
+    rmse, precision = calculate_metrics(model, val_loader, device, val_df, movie_encoder)
     print(f"RMSE: {rmse:.4f}")
     print(f"Precision@10: {precision:.4f}")
-    print(f"Recall@10: {recall:.4f}")
     
     # Generate sample recommendations
     print("\nGenerating sample recommendations...")

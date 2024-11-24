@@ -151,10 +151,32 @@ def custom_loss(rating_pred, interaction_pred, rating_true, label_true, alpha=0.
     mae_loss = nn.L1Loss()(rating_pred.squeeze(), rating_true)
     return alpha * (0.8 * mse_loss + 0.2 * mae_loss) + (1 - alpha) * bce_loss
 
-def evaluate_model(model, dataloader, device):
+def calculate_precision(model, user_ids, movie_ids, true_interactions, device, top_k=10):
+    model.eval()
+    precision_scores = []
+
+    with torch.no_grad():
+        for user_id in user_ids:
+            user_movies = movie_ids[true_interactions[user_id] > 0]
+            all_movies = torch.arange(len(movie_ids)).to(device)
+            user_tensor = torch.full((len(all_movies),), user_id).to(device)
+
+            rating_pred, _ = model(user_tensor, all_movies)
+            top_k_movies = torch.topk(rating_pred.squeeze(), top_k).indices.cpu().numpy()
+
+            watched_movies = set(torch.tensor(user_movies).cpu().numpy())
+            recommended_movies = set(top_k_movies)
+
+            precision = len(watched_movies & recommended_movies) / top_k
+            precision_scores.append(precision)
+
+    return np.mean(precision_scores)
+
+def evaluate_model(model, dataloader, device, movie_ids):
     model.eval()
     val_loss = rmse = mae = precision = recall = 0
-    
+    true_interactions = {user_id: torch.zeros(len(movie_ids)) for user_id in dataloader.dataset.users}
+
     with torch.no_grad():
         for batch in dataloader:
             users = batch["users"].to(device)
@@ -162,20 +184,22 @@ def evaluate_model(model, dataloader, device):
             ratings = batch["ratings"].to(device)
             labels = batch["labels"].to(device)
 
+            for user, movie, label in zip(users, movies, labels):
+                true_interactions[user.item()][movie.item()] = label
+
             rating_pred, interaction_pred = model(users, movies)
             loss = custom_loss(rating_pred, interaction_pred, ratings, labels)
             val_loss += loss.item()
 
             rmse += calculate_rmse(rating_pred, ratings)
             mae += calculate_mae(rating_pred, ratings)
-            batch_precision, batch_recall = calculate_precision_recall(interaction_pred, labels)
-            precision += batch_precision
-            recall += batch_recall
+
+    precision = calculate_precision(model, dataloader.dataset.users, movie_ids, true_interactions, device)
 
     n = len(dataloader)
-    return (val_loss/n, rmse/n, mae/n, precision/n, recall/n)
+    return (val_loss/n, rmse/n, mae/n, precision, recall/n)
 
-def train_model(model, train_loader, val_loader, epochs=15, device="cuda"):
+def train_model(model, train_loader, val_loader, movie_ids, epochs=15, device="cuda"):
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
@@ -210,7 +234,7 @@ def train_model(model, train_loader, val_loader, epochs=15, device="cuda"):
         avg_train_loss = total_loss / len(train_loader)
         
         model.eval()
-        val_loss, rmse, mae, precision, recall = evaluate_model(model, val_loader, device)
+        val_loss, rmse, mae, precision, recall = evaluate_model(model, val_loader, device, movie_ids)
         
         print(f"\nEpoch {epoch+1}/{epochs}")
         print(f"Average Training Loss: {avg_train_loss:.4f}")
@@ -333,6 +357,9 @@ def main():
     df_val['userId'] = le_user.transform(df_val['userId'])
     df_val['movieId'] = le_movie.transform(df_val['movieId'])
 
+    # Get unique movie IDs
+    movie_ids = df['movieId'].unique()
+
     # Create datasets
     train_dataset = BalancedMovieLensDataset(
         users=df_train['userId'].values,
@@ -371,7 +398,7 @@ def main():
     ).to(device)
     
     # Train model
-    train_model(model, train_loader, val_loader, epochs=15, device=device)
+    train_model(model, train_loader, val_loader, movie_ids, epochs=15, device=device)
 
     # After training is complete:
     user_id_20 = le_user.transform([20])[0]  # Get encoded value for user 20
