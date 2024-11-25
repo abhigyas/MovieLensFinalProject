@@ -1,0 +1,26 @@
+<!-- templates/home.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-section">
+    <h1 class="display-4">Movie Recommendation System</h1>
+    <p class="lead">A deep learning based approach to personalized movie recommendations</p>
+</div>
+
+<div class="metrics-section">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h4">Model Performance Metrics</h2>
+        </div>
+        <div class="metrics-grid">
+            {% for metric, value in metrics.items() %}
+            <div class="metric-card card">
+                <div class="card-body">
+                    <div class="metric-title">{{ metric }}</div>
+                    <div class="metric-value">{{ "%.4f"|format(value) }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

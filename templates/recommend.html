@@ -1,0 +1,28 @@
+<!-- templates/recommend.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="recommendation-form">
+    <h2>Get Movie Recommendations</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="user_id" class="form-label">Enter User ID</label>
+            <input type="number" class="form-control" id="user_id" name="user_id" required min="1">
+        </div>
+        <button type="submit" class="btn btn-primary">Get Recommendations</button>
+    </form>
+</div>
+
+{% if recommendations %}
+<div class="movie-list">
+    <h3>Recommendations for User {{ user_id }}</h3>
+    {% for movie in recommendations %}
+    <div class="movie-card card">
+        <div class="card-body">
+            <h5 class="movie-title">{{ movie.title }}</h5>
+            <p class="predicted-rating">Predicted Rating: {{ "%.2f"|format(movie.predicted_rating) }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

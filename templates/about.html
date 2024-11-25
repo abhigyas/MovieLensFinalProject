@@ -1,0 +1,47 @@
+<!-- templates/about.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="about-section">
+    <h1 class="display-5 mb-4">About the Project</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h4 mb-3">Implementation Details</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h3 class="h5">Deep Learning Model</h3>
+                    <p>Built using PyTorch with embedding layers and neural networks</p>
+                </div>
+                <div class="feature-item">
+                    <h3 class="h5">Dataset</h3>
+                    <p>Trained on MovieLens dataset containing 100,000 ratings across 9,000 movies</p>
+                </div>
+                <div class="feature-item">
+                    <h3 class="h5">Architecture</h3>
+                    <p>Uses 128-dimensional embeddings with 4 fully connected layers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h4 mb-3">Performance Metrics</h2>
+            <div class="metrics-explanation">
+                <div class="metric-detail">
+                    <h3 class="h5">RMSE & MAE</h3>
+                    <p>Measures prediction accuracy on rating scale</p>
+                </div>
+                <div class="metric-detail">
+                    <h3 class="h5">Precision & Recall</h3>
+                    <p>Evaluates recommendation relevance</p>
+                </div>
+                <div class="metric-detail">
+                    <h3 class="h5">NDCG</h3>
+                    <p>Measures ranking quality of recommendations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
