@@ -2,7 +2,7 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import torch
-from small_dataset_model import DeepRecommenderSystem, recommend_movies
+from small_dataset_model import ExplainableRecommenderSystem, explain_recommendation, recommend_movies
 from sklearn.preprocessing import LabelEncoder
 import json
 import plotly
@@ -19,7 +19,7 @@ def load_model_and_data():
     ratings_df['userId'] = user_encoder.fit_transform(ratings_df['userId'])
     ratings_df['movieId'] = movie_encoder.fit_transform(ratings_df['movieId'])
     
-    model = DeepRecommenderSystem(
+    model = ExplainableRecommenderSystem(
         num_users=len(user_encoder.classes_),
         num_movies=len(movie_encoder.classes_)
     ).to(device)
@@ -27,6 +27,7 @@ def load_model_and_data():
     model.eval()
     
     return model, ratings_df, movies_df, user_encoder, movie_encoder, device
+
 def parse_training_history(filename):
     train_losses = []
     val_losses = []
@@ -76,7 +77,62 @@ def create_app():
                 model, encoded_user_id, movie_ids, 
                 movies_df, device, movie_encoder
             )
-            return render_template('recommend.html', recommendations=recommendations, user_id=user_id)
+            
+            # Generate explanations for recommendations
+            explanations = []
+            for movie in recommendations[:3]:  # Get explanations for top 3
+                explanation = explain_recommendation(
+                    model,
+                    encoded_user_id,
+                    movie['movieId'],
+                    device
+                )
+                
+                try:
+                    # Parse the explanation text to extract values
+                    lines = explanation.split('\n')
+                    # Find lines containing the relevant information
+                    for line in lines:
+                        if "User preferences:" in line:
+                            user_importance = float(line.split(': ')[1])
+                        elif "Movie characteristics:" in line:
+                            movie_importance = float(line.split(': ')[1])
+                    
+                    explanations.append({
+                        'movie': movie['title'],
+                        'explanation': {
+                            'user_importance': user_importance,
+                            'movie_importance': movie_importance
+                        },
+                        'rating': movie['predicted_rating'],
+                        'full_explanation': explanation  # Keep full explanation text
+                    })
+                except Exception as e:
+                    print(f"Error parsing explanation: {str(e)}")
+                    continue
+            
+            if explanations:  # Only create visualization if we have explanations
+                # Create attention visualization
+                attention_fig = px.bar(
+                    pd.DataFrame([
+                        {'Factor': 'User Preferences', 'Weight': explanations[0]['explanation']['user_importance']},
+                        {'Factor': 'Movie Characteristics', 'Weight': explanations[0]['explanation']['movie_importance']}
+                    ]),
+                    x='Factor',
+                    y='Weight',
+                    title='Recommendation Factors'
+                )
+                attention_plot = json.dumps(attention_fig.to_dict(), cls=plotly.utils.PlotlyJSONEncoder)
+            else:
+                attention_plot = None
+            
+            return render_template(
+                'recommend.html',
+                recommendations=recommendations,
+                explanations=explanations,
+                attention_plot=attention_plot,
+                user_id=user_id
+            )
         return render_template('recommend.html')
 
     @app.route('/visualize')
@@ -138,8 +194,38 @@ def create_app():
 
         # Convert plots to JSON
         plots = [fig1, fig2, fig3, fig4, fig5]
-        graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
         
+        # Add embedding visualization
+        user_sample = ratings_df['userId'].unique()[:100]
+        movie_sample = ratings_df['movieId'].unique()[:100]
+        
+        with torch.no_grad():
+            user_embeddings = model.user_embedding(torch.tensor(user_sample).to(device)).cpu().numpy()
+            movie_embeddings = model.movie_embedding(torch.tensor(movie_sample).to(device)).cpu().numpy()
+        
+        # Create t-SNE plot
+        from sklearn.manifold import TSNE
+        tsne = TSNE(n_components=2)
+        embeddings_2d = tsne.fit_transform(np.vstack([user_embeddings, movie_embeddings]))
+        
+        embedding_df = pd.DataFrame(
+            embeddings_2d,
+            columns=['x', 'y']
+        )
+        embedding_df['type'] = ['User'] * len(user_sample) + ['Movie'] * len(movie_sample)
+        
+        fig_embeddings = px.scatter(
+            embedding_df, 
+            x='x', 
+            y='y', 
+            color='type',
+            title='User and Movie Embeddings Visualization'
+        )
+        
+        # Add to plots list
+        plots.append(fig_embeddings)
+        
+        graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
         return render_template('visualize.html', graphJSON=graphJSON)
 
     @app.route('/about')

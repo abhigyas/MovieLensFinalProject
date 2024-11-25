@@ -25,4 +25,38 @@
     {% endfor %}
 </div>
 {% endif %}
+
+{% if explanations %}
+<div class="explanations-section">
+    <h3>Recommendation Explanations</h3>
+    {% for exp in explanations %}
+    <div class="explanation-card card mb-3">
+        <div class="card-body">
+            <h4>{{ exp.movie }}</h4>
+            <p class="predicted-rating">Predicted Rating: {{ "%.2f"|format(exp.rating) }}</p>
+            <div class="explanation-text">
+                <pre>{{ exp.full_explanation }}</pre>
+            </div>
+            <div id="attention-plot-{{ loop.index }}" class="attention-plot"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    {% for exp in explanations %}
+    var attention_data_{{ loop.index }} = {
+        'data': [{
+            'type': 'bar',
+            'x': ['User Preferences', 'Movie Characteristics'],
+            'y': [{{ exp.explanation.user_importance }}, {{ exp.explanation.movie_importance }}]
+        }],
+        'layout': {
+            'title': 'Recommendation Factors for {{ exp.movie|safe }}'
+        }
+    };
+    Plotly.newPlot('attention-plot-{{ loop.index }}', attention_data_{{ loop.index }}.data, attention_data_{{ loop.index }}.layout);
+    {% endfor %}
+</script>
+{% endif %}
 {% endblock %}
