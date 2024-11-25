@@ -2,44 +2,45 @@ Using device: cpu
 Loading data...
 
 Starting training...
-Epoch 1/10 | Batch 0/1261 | Avg Loss: 2.885818Epoch 1/10 | Batch 100/1261 | Avg Loss: 2.187304Epoch 1/10 | Batch 200/1261 | Avg Loss: 1.773471Epoch 1/10 | Batch 300/1261 | Avg Loss: 1.592594Epoch 1/10 | Batch 400/1261 | Avg Loss: 1.479249Epoch 1/10 | Batch 500/1261 | Avg Loss: 1.405189Epoch 1/10 | Batch 600/1261 | Avg Loss: 1.347454Epoch 1/10 | Batch 700/1261 | Avg Loss: 1.307831Epoch 1/10 | Batch 800/1261 | Avg Loss: 1.272468Epoch 1/10 | Batch 900/1261 | Avg Loss: 1.243456Epoch 1/10 | Batch 1000/1261 | Avg Loss: 1.220262Epoch 1/10 | Batch 1100/1261 | Avg Loss: 1.202153Epoch 1/10 | Batch 1200/1261 | Avg Loss: 1.183118
-Epoch 1/10 - Train Loss: 1.172236 - Val Loss: 0.939145
-Epoch 2/10 | Batch 0/1261 | Avg Loss: 0.968650Epoch 2/10 | Batch 100/1261 | Avg Loss: 0.915813Epoch 2/10 | Batch 200/1261 | Avg Loss: 0.923019Epoch 2/10 | Batch 300/1261 | Avg Loss: 0.921260Epoch 2/10 | Batch 400/1261 | Avg Loss: 0.929914Epoch 2/10 | Batch 500/1261 | Avg Loss: 0.927930Epoch 2/10 | Batch 600/1261 | Avg Loss: 0.929122Epoch 2/10 | Batch 700/1261 | Avg Loss: 0.926096Epoch 2/10 | Batch 800/1261 | Avg Loss: 0.923629Epoch 2/10 | Batch 900/1261 | Avg Loss: 0.918106Epoch 2/10 | Batch 1000/1261 | Avg Loss: 0.917468Epoch 2/10 | Batch 1100/1261 | Avg Loss: 0.913296Epoch 2/10 | Batch 1200/1261 | Avg Loss: 0.911810
-Epoch 2/10 - Train Loss: 0.908878 - Val Loss: 0.887655
-Epoch 3/10 | Batch 0/1261 | Avg Loss: 0.705776Epoch 3/10 | Batch 100/1261 | Avg Loss: 0.854630Epoch 3/10 | Batch 200/1261 | Avg Loss: 0.850796Epoch 3/10 | Batch 300/1261 | Avg Loss: 0.852269Epoch 3/10 | Batch 400/1261 | Avg Loss: 0.855038Epoch 3/10 | Batch 500/1261 | Avg Loss: 0.852933Epoch 3/10 | Batch 600/1261 | Avg Loss: 0.852476Epoch 3/10 | Batch 700/1261 | Avg Loss: 0.848618Epoch 3/10 | Batch 800/1261 | Avg Loss: 0.847451Epoch 3/10 | Batch 900/1261 | Avg Loss: 0.843813Epoch 3/10 | Batch 1000/1261 | Avg Loss: 0.843442Epoch 3/10 | Batch 1100/1261 | Avg Loss: 0.841973Epoch 3/10 | Batch 1200/1261 | Avg Loss: 0.840216
-Epoch 3/10 - Train Loss: 0.839532 - Val Loss: 0.846069
-Epoch 4/10 | Batch 0/1261 | Avg Loss: 0.687590Epoch 4/10 | Batch 100/1261 | Avg Loss: 0.770920Epoch 4/10 | Batch 200/1261 | Avg Loss: 0.783974Epoch 4/10 | Batch 300/1261 | Avg Loss: 0.776929Epoch 4/10 | Batch 400/1261 | Avg Loss: 0.772852Epoch 4/10 | Batch 500/1261 | Avg Loss: 0.777162Epoch 4/10 | Batch 600/1261 | Avg Loss: 0.780180Epoch 4/10 | Batch 700/1261 | Avg Loss: 0.782094Epoch 4/10 | Batch 800/1261 | Avg Loss: 0.780664Epoch 4/10 | Batch 900/1261 | Avg Loss: 0.779217Epoch 4/10 | Batch 1000/1261 | Avg Loss: 0.778392Epoch 4/10 | Batch 1100/1261 | Avg Loss: 0.779260Epoch 4/10 | Batch 1200/1261 | Avg Loss: 0.780852
-Epoch 4/10 - Train Loss: 0.779829 - Val Loss: 0.823406
-Epoch 5/10 | Batch 0/1261 | Avg Loss: 0.768277Epoch 5/10 | Batch 100/1261 | Avg Loss: 0.735357Epoch 5/10 | Batch 200/1261 | Avg Loss: 0.718996Epoch 5/10 | Batch 300/1261 | Avg Loss: 0.723404Epoch 5/10 | Batch 400/1261 | Avg Loss: 0.723797Epoch 5/10 | Batch 500/1261 | Avg Loss: 0.725087Epoch 5/10 | Batch 600/1261 | Avg Loss: 0.733347Epoch 5/10 | Batch 700/1261 | Avg Loss: 0.733895Epoch 5/10 | Batch 800/1261 | Avg Loss: 0.731991Epoch 5/10 | Batch 900/1261 | Avg Loss: 0.730012Epoch 5/10 | Batch 1000/1261 | Avg Loss: 0.731340Epoch 5/10 | Batch 1100/1261 | Avg Loss: 0.729991Epoch 5/10 | Batch 1200/1261 | Avg Loss: 0.730021
-Epoch 5/10 - Train Loss: 0.731862 - Val Loss: 0.797402
-Epoch 6/10 | Batch 0/1261 | Avg Loss: 0.727528Epoch 6/10 | Batch 100/1261 | Avg Loss: 0.655157Epoch 6/10 | Batch 200/1261 | Avg Loss: 0.672345Epoch 6/10 | Batch 300/1261 | Avg Loss: 0.669566Epoch 6/10 | Batch 400/1261 | Avg Loss: 0.673304Epoch 6/10 | Batch 500/1261 | Avg Loss: 0.682196Epoch 6/10 | Batch 600/1261 | Avg Loss: 0.681365Epoch 6/10 | Batch 700/1261 | Avg Loss: 0.682871Epoch 6/10 | Batch 800/1261 | Avg Loss: 0.682745Epoch 6/10 | Batch 900/1261 | Avg Loss: 0.685506Epoch 6/10 | Batch 1000/1261 | Avg Loss: 0.685629Epoch 6/10 | Batch 1100/1261 | Avg Loss: 0.687399Epoch 6/10 | Batch 1200/1261 | Avg Loss: 0.686446
-Epoch 6/10 - Train Loss: 0.687753 - Val Loss: 0.795351
-Epoch 7/10 | Batch 0/1261 | Avg Loss: 0.406710Epoch 7/10 | Batch 100/1261 | Avg Loss: 0.617076Epoch 7/10 | Batch 200/1261 | Avg Loss: 0.632626Epoch 7/10 | Batch 300/1261 | Avg Loss: 0.633910Epoch 7/10 | Batch 400/1261 | Avg Loss: 0.637338Epoch 7/10 | Batch 500/1261 | Avg Loss: 0.646458Epoch 7/10 | Batch 600/1261 | Avg Loss: 0.649319Epoch 7/10 | Batch 700/1261 | Avg Loss: 0.648472Epoch 7/10 | Batch 800/1261 | Avg Loss: 0.649211Epoch 7/10 | Batch 900/1261 | Avg Loss: 0.648402Epoch 7/10 | Batch 1000/1261 | Avg Loss: 0.652370Epoch 7/10 | Batch 1100/1261 | Avg Loss: 0.652550Epoch 7/10 | Batch 1200/1261 | Avg Loss: 0.654796
-Epoch 7/10 - Train Loss: 0.657188 - Val Loss: 0.797863
-Epoch 8/10 | Batch 0/1261 | Avg Loss: 0.816480Epoch 8/10 | Batch 100/1261 | Avg Loss: 0.578908Epoch 8/10 | Batch 200/1261 | Avg Loss: 0.580486Epoch 8/10 | Batch 300/1261 | Avg Loss: 0.588706Epoch 8/10 | Batch 400/1261 | Avg Loss: 0.594442Epoch 8/10 | Batch 500/1261 | Avg Loss: 0.601277Epoch 8/10 | Batch 600/1261 | Avg Loss: 0.605517Epoch 8/10 | Batch 700/1261 | Avg Loss: 0.613157Epoch 8/10 | Batch 800/1261 | Avg Loss: 0.615228Epoch 8/10 | Batch 900/1261 | Avg Loss: 0.618954Epoch 8/10 | Batch 1000/1261 | Avg Loss: 0.620177Epoch 8/10 | Batch 1100/1261 | Avg Loss: 0.622673Epoch 8/10 | Batch 1200/1261 | Avg Loss: 0.625147
-Epoch 8/10 - Train Loss: 0.625411 - Val Loss: 0.795235
-Epoch 9/10 | Batch 0/1261 | Avg Loss: 0.521848Epoch 9/10 | Batch 100/1261 | Avg Loss: 0.582246Epoch 9/10 | Batch 200/1261 | Avg Loss: 0.572251Epoch 9/10 | Batch 300/1261 | Avg Loss: 0.568888Epoch 9/10 | Batch 400/1261 | Avg Loss: 0.565262Epoch 9/10 | Batch 500/1261 | Avg Loss: 0.570705Epoch 9/10 | Batch 600/1261 | Avg Loss: 0.571782Epoch 9/10 | Batch 700/1261 | Avg Loss: 0.577245Epoch 9/10 | Batch 800/1261 | Avg Loss: 0.582675Epoch 9/10 | Batch 900/1261 | Avg Loss: 0.586786Epoch 9/10 | Batch 1000/1261 | Avg Loss: 0.588925Epoch 9/10 | Batch 1100/1261 | Avg Loss: 0.591897Epoch 9/10 | Batch 1200/1261 | Avg Loss: 0.593791
-Epoch 9/10 - Train Loss: 0.595570 - Val Loss: 0.792833
-Epoch 10/10 | Batch 0/1261 | Avg Loss: 0.499029Epoch 10/10 | Batch 100/1261 | Avg Loss: 0.549147Epoch 10/10 | Batch 200/1261 | Avg Loss: 0.556736Epoch 10/10 | Batch 300/1261 | Avg Loss: 0.553972Epoch 10/10 | Batch 400/1261 | Avg Loss: 0.550246Epoch 10/10 | Batch 500/1261 | Avg Loss: 0.551917Epoch 10/10 | Batch 600/1261 | Avg Loss: 0.555374Epoch 10/10 | Batch 700/1261 | Avg Loss: 0.557902Epoch 10/10 | Batch 800/1261 | Avg Loss: 0.558819Epoch 10/10 | Batch 900/1261 | Avg Loss: 0.559489Epoch 10/10 | Batch 1000/1261 | Avg Loss: 0.562181Epoch 10/10 | Batch 1100/1261 | Avg Loss: 0.564287Epoch 10/10 | Batch 1200/1261 | Avg Loss: 0.567191
-Epoch 10/10 - Train Loss: 0.569297 - Val Loss: 0.820162
+Epoch 1/10 | Batch 0/1261 | Avg Loss: 3.677111Epoch 1/10 | Batch 100/1261 | Avg Loss: 2.218474Epoch 1/10 | Batch 200/1261 | Avg Loss: 1.795200Epoch 1/10 | Batch 300/1261 | Avg Loss: 1.609242Epoch 1/10 | Batch 400/1261 | Avg Loss: 1.493292Epoch 1/10 | Batch 500/1261 | Avg Loss: 1.412386Epoch 1/10 | Batch 600/1261 | Avg Loss: 1.353399Epoch 1/10 | Batch 700/1261 | Avg Loss: 1.311342Epoch 1/10 | Batch 800/1261 | Avg Loss: 1.271822Epoch 1/10 | Batch 900/1261 | Avg Loss: 1.241014Epoch 1/10 | Batch 1000/1261 | Avg Loss: 1.216610Epoch 1/10 | Batch 1100/1261 | Avg Loss: 1.194717Epoch 1/10 | Batch 1200/1261 | Avg Loss: 1.176330
+Epoch 1/10 - Train Loss: 1.168257 - Val Loss: 0.928553
+Epoch 2/10 | Batch 0/1261 | Avg Loss: 1.001779Epoch 2/10 | Batch 100/1261 | Avg Loss: 0.910908Epoch 2/10 | Batch 200/1261 | Avg Loss: 0.918393Epoch 2/10 | Batch 300/1261 | Avg Loss: 0.925737Epoch 2/10 | Batch 400/1261 | Avg Loss: 0.919335Epoch 2/10 | Batch 500/1261 | Avg Loss: 0.921457Epoch 2/10 | Batch 600/1261 | Avg Loss: 0.919714Epoch 2/10 | Batch 700/1261 | Avg Loss: 0.918078Epoch 2/10 | Batch 800/1261 | Avg Loss: 0.916938Epoch 2/10 | Batch 900/1261 | Avg Loss: 0.916508Epoch 2/10 | Batch 1000/1261 | Avg Loss: 0.910997Epoch 2/10 | Batch 1100/1261 | Avg Loss: 0.910404Epoch 2/10 | Batch 1200/1261 | Avg Loss: 0.907753
+Epoch 2/10 - Train Loss: 0.905324 - Val Loss: 0.884278
+Epoch 3/10 | Batch 0/1261 | Avg Loss: 0.867996Epoch 3/10 | Batch 100/1261 | Avg Loss: 0.845070Epoch 3/10 | Batch 200/1261 | Avg Loss: 0.864695Epoch 3/10 | Batch 300/1261 | Avg Loss: 0.858962Epoch 3/10 | Batch 400/1261 | Avg Loss: 0.854956Epoch 3/10 | Batch 500/1261 | Avg Loss: 0.849252Epoch 3/10 | Batch 600/1261 | Avg Loss: 0.848113Epoch 3/10 | Batch 700/1261 | Avg Loss: 0.845784Epoch 3/10 | Batch 800/1261 | Avg Loss: 0.841709Epoch 3/10 | Batch 900/1261 | Avg Loss: 0.840089Epoch 3/10 | Batch 1000/1261 | Avg Loss: 0.839211Epoch 3/10 | Batch 1100/1261 | Avg Loss: 0.840504Epoch 3/10 | Batch 1200/1261 | Avg Loss: 0.841662
+Epoch 3/10 - Train Loss: 0.839605 - Val Loss: 0.850380
+Epoch 4/10 | Batch 0/1261 | Avg Loss: 0.785158Epoch 4/10 | Batch 100/1261 | Avg Loss: 0.785642Epoch 4/10 | Batch 200/1261 | Avg Loss: 0.790889Epoch 4/10 | Batch 300/1261 | Avg Loss: 0.780323Epoch 4/10 | Batch 400/1261 | Avg Loss: 0.775357Epoch 4/10 | Batch 500/1261 | Avg Loss: 0.778501Epoch 4/10 | Batch 600/1261 | Avg Loss: 0.779455Epoch 4/10 | Batch 700/1261 | Avg Loss: 0.780259Epoch 4/10 | Batch 800/1261 | Avg Loss: 0.782313Epoch 4/10 | Batch 900/1261 | Avg Loss: 0.782270Epoch 4/10 | Batch 1000/1261 | Avg Loss: 0.781428Epoch 4/10 | Batch 1100/1261 | Avg Loss: 0.782641Epoch 4/10 | Batch 1200/1261 | Avg Loss: 0.782396
+Epoch 4/10 - Train Loss: 0.782653 - Val Loss: 0.823354
+Epoch 5/10 | Batch 0/1261 | Avg Loss: 0.588103Epoch 5/10 | Batch 100/1261 | Avg Loss: 0.710496Epoch 5/10 | Batch 200/1261 | Avg Loss: 0.717067Epoch 5/10 | Batch 300/1261 | Avg Loss: 0.722333Epoch 5/10 | Batch 400/1261 | Avg Loss: 0.724575Epoch 5/10 | Batch 500/1261 | Avg Loss: 0.729923Epoch 5/10 | Batch 600/1261 | Avg Loss: 0.726489Epoch 5/10 | Batch 700/1261 | Avg Loss: 0.731223Epoch 5/10 | Batch 800/1261 | Avg Loss: 0.730740Epoch 5/10 | Batch 900/1261 | Avg Loss: 0.730221Epoch 5/10 | Batch 1000/1261 | Avg Loss: 0.732955Epoch 5/10 | Batch 1100/1261 | Avg Loss: 0.733185Epoch 5/10 | Batch 1200/1261 | Avg Loss: 0.731918
+Epoch 5/10 - Train Loss: 0.732068 - Val Loss: 0.800024
+Epoch 6/10 | Batch 0/1261 | Avg Loss: 0.603989Epoch 6/10 | Batch 100/1261 | Avg Loss: 0.665012Epoch 6/10 | Batch 200/1261 | Avg Loss: 0.668825Epoch 6/10 | Batch 300/1261 | Avg Loss: 0.675483Epoch 6/10 | Batch 400/1261 | Avg Loss: 0.683352Epoch 6/10 | Batch 500/1261 | Avg Loss: 0.681475Epoch 6/10 | Batch 600/1261 | Avg Loss: 0.675579Epoch 6/10 | Batch 700/1261 | Avg Loss: 0.679628Epoch 6/10 | Batch 800/1261 | Avg Loss: 0.683027Epoch 6/10 | Batch 900/1261 | Avg Loss: 0.685895Epoch 6/10 | Batch 1000/1261 | Avg Loss: 0.685245Epoch 6/10 | Batch 1100/1261 | Avg Loss: 0.688206Epoch 6/10 | Batch 1200/1261 | Avg Loss: 0.689390
+Epoch 6/10 - Train Loss: 0.690603 - Val Loss: 0.799815
+Epoch 7/10 | Batch 0/1261 | Avg Loss: 0.774046Epoch 7/10 | Batch 100/1261 | Avg Loss: 0.628836Epoch 7/10 | Batch 200/1261 | Avg Loss: 0.628452Epoch 7/10 | Batch 300/1261 | Avg Loss: 0.636303Epoch 7/10 | Batch 400/1261 | Avg Loss: 0.638750Epoch 7/10 | Batch 500/1261 | Avg Loss: 0.645267Epoch 7/10 | Batch 600/1261 | Avg Loss: 0.644481Epoch 7/10 | Batch 700/1261 | Avg Loss: 0.649712Epoch 7/10 | Batch 800/1261 | Avg Loss: 0.650223Epoch 7/10 | Batch 900/1261 | Avg Loss: 0.648762Epoch 7/10 | Batch 1000/1261 | Avg Loss: 0.648807Epoch 7/10 | Batch 1100/1261 | Avg Loss: 0.652843Epoch 7/10 | Batch 1200/1261 | Avg Loss: 0.654392
+Epoch 7/10 - Train Loss: 0.654905 - Val Loss: 0.800619
+Epoch 8/10 | Batch 0/1261 | Avg Loss: 0.704480Epoch 8/10 | Batch 100/1261 | Avg Loss: 0.582256Epoch 8/10 | Batch 200/1261 | Avg Loss: 0.589734Epoch 8/10 | Batch 300/1261 | Avg Loss: 0.597735Epoch 8/10 | Batch 400/1261 | Avg Loss: 0.603308Epoch 8/10 | Batch 500/1261 | Avg Loss: 0.602942Epoch 8/10 | Batch 600/1261 | Avg Loss: 0.603843Epoch 8/10 | Batch 700/1261 | Avg Loss: 0.609787Epoch 8/10 | Batch 800/1261 | Avg Loss: 0.612331Epoch 8/10 | Batch 900/1261 | Avg Loss: 0.616210Epoch 8/10 | Batch 1000/1261 | Avg Loss: 0.619693Epoch 8/10 | Batch 1100/1261 | Avg Loss: 0.622935Epoch 8/10 | Batch 1200/1261 | Avg Loss: 0.622675
+Epoch 8/10 - Train Loss: 0.623417 - Val Loss: 0.798662
+Epoch 9/10 | Batch 0/1261 | Avg Loss: 0.411686Epoch 9/10 | Batch 100/1261 | Avg Loss: 0.567772Epoch 9/10 | Batch 200/1261 | Avg Loss: 0.572745Epoch 9/10 | Batch 300/1261 | Avg Loss: 0.576227Epoch 9/10 | Batch 400/1261 | Avg Loss: 0.575886Epoch 9/10 | Batch 500/1261 | Avg Loss: 0.578523Epoch 9/10 | Batch 600/1261 | Avg Loss: 0.580933Epoch 9/10 | Batch 700/1261 | Avg Loss: 0.584058Epoch 9/10 | Batch 800/1261 | Avg Loss: 0.584316Epoch 9/10 | Batch 900/1261 | Avg Loss: 0.589977Epoch 9/10 | Batch 1000/1261 | Avg Loss: 0.591516Epoch 9/10 | Batch 1100/1261 | Avg Loss: 0.592720Epoch 9/10 | Batch 1200/1261 | Avg Loss: 0.594636
+Epoch 9/10 - Train Loss: 0.595532 - Val Loss: 0.805030
+Epoch 10/10 | Batch 0/1261 | Avg Loss: 0.586001Epoch 10/10 | Batch 100/1261 | Avg Loss: 0.544545Epoch 10/10 | Batch 200/1261 | Avg Loss: 0.553841Epoch 10/10 | Batch 300/1261 | Avg Loss: 0.553005Epoch 10/10 | Batch 400/1261 | Avg Loss: 0.556989Epoch 10/10 | Batch 500/1261 | Avg Loss: 0.558783Epoch 10/10 | Batch 600/1261 | Avg Loss: 0.561222Epoch 10/10 | Batch 700/1261 | Avg Loss: 0.563320Epoch 10/10 | Batch 800/1261 | Avg Loss: 0.562939Epoch 10/10 | Batch 900/1261 | Avg Loss: 0.566004Epoch 10/10 | Batch 1000/1261 | Avg Loss: 0.568406Epoch 10/10 | Batch 1100/1261 | Avg Loss: 0.569828Epoch 10/10 | Batch 1200/1261 | Avg Loss: 0.570344
+Epoch 10/10 - Train Loss: 0.570565 - Val Loss: 0.812407
 
 Calculating metrics...
-RMSE: 0.9061
+RMSE: 0.9019
+MAE: 0.6816
 Precision@10: 0.8497
 Recall@10: 0.6362
 F-measure: 0.7276
-NDCG@10: 0.8861
+NDCG@10: 0.8871
 
 Generating sample recommendations...
 
 Top 10 recommended movies for user 1:
-1. Paths of Glory (1957) - Predicted rating: 4.50
-2. Bad Boy Bubby (1993) - Predicted rating: 4.46
-3. To Catch a Thief (1955) - Predicted rating: 4.43
-4. Adam's Rib (1949) - Predicted rating: 4.43
-5. Town Called Panic, A (Panique au village) (2009) - Predicted rating: 4.43
-6. Wings of the Dove, The (1997) - Predicted rating: 4.43
-7. Wild Parrots of Telegraph Hill, The (2003) - Predicted rating: 4.42
-8. Gloomy Sunday (Ein Lied von Liebe und Tod) (1999) - Predicted rating: 4.42
-9. Fight Club (1999) - Predicted rating: 4.41
-10. Oscar and Lucinda (a.k.a. Oscar & Lucinda) (1997) - Predicted rating: 4.41
+1. Day of the Doctor, The (2013) - Predicted rating: 4.68
+2. Logan (2017) - Predicted rating: 4.62
+3. Goodfellas (1990) - Predicted rating: 4.61
+4. World of Glory (1991) - Predicted rating: 4.60
+5. Girl on the Bridge, The (Fille sur le pont, La) (1999) - Predicted rating: 4.60
+6. Hoop Dreams (1994) - Predicted rating: 4.59
+7. Strada, La (1954) - Predicted rating: 4.58
+8. Guess Who's Coming to Dinner (1967) - Predicted rating: 4.58
+9. Ran (1985) - Predicted rating: 4.58
+10. Trial, The (Procès, Le) (1962) - Predicted rating: 4.57

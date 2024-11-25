@@ -169,6 +169,9 @@ def calculate_ndcg(true_ratings, predicted_ratings, k=10):
     ndcg = dcg / idcg if idcg > 0 else 0
     return ndcg
 
+def calculate_mae(y_true, y_pred):
+    return np.mean(np.abs(np.array(y_true) - np.array(y_pred)))
+
 def calculate_metrics(model, val_loader, device):
     model.eval()
     predictions = []
@@ -198,8 +201,9 @@ def calculate_metrics(model, val_loader, device):
                 user_test_items[user].add(movie)
                 user_recommendations[user].append((movie, pred, true))
     
-    # Calculate RMSE
+    # Calculate RMSE and MAE
     rmse = root_mean_squared_error(actuals, predictions)
+    mae = calculate_mae(actuals, predictions)
     
     # Calculate Precision and Recall for each user
     precisions = []
@@ -242,7 +246,7 @@ def calculate_metrics(model, val_loader, device):
     
     avg_ndcg = np.mean(ndcg_scores)
     
-    return rmse, avg_precision, avg_recall, f_measure, avg_ndcg
+    return rmse, mae, avg_precision, avg_recall, f_measure, avg_ndcg
 
 def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
     # Args:
@@ -396,8 +400,9 @@ def main():
         
         # Calculate metrics
         print("\nCalculating metrics...")
-        rmse, precision, recall, f_measure, ndcg = calculate_metrics(model, val_loader, device)
+        rmse, mae, precision, recall, f_measure, ndcg = calculate_metrics(model, val_loader, device)
         print(f"RMSE: {rmse:.4f}")
+        print(f"MAE: {mae:.4f}")
         print(f"Precision@10: {precision:.4f}")
         print(f"Recall@10: {recall:.4f}")
         print(f"F-measure: {f_measure:.4f}")
