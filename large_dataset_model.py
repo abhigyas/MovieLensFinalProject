@@ -76,6 +76,57 @@ class DeepRecommenderSystem(nn.Module):
         concatenated = torch.cat([user_embedded, movie_embedded], dim=1)
         return self.layers(concatenated).squeeze()
 
+class ExplainableRecommenderSystem(DeepRecommenderSystem):
+    def __init__(self, num_users, num_movies, embedding_size=128):
+        super(ExplainableRecommenderSystem, self).__init__(num_users, num_movies, embedding_size)
+        
+        # Add attention layer
+        self.attention = nn.Sequential(
+            nn.Linear(2 * embedding_size, 64),
+            nn.Tanh(),
+            nn.Linear(64, 2),  # Change to 2 outputs for user and movie attention
+            nn.Softmax(dim=1)
+        )
+    
+    def forward(self, users, movies):
+        user_embedded = self.user_embedding(users)
+        movie_embedded = self.movie_embedding(movies)
+        concatenated = torch.cat([user_embedded, movie_embedded], dim=1)
+        
+        # Calculate attention weights (2 weights per sample)
+        attention_weights = self.attention(concatenated)
+        
+        # Split embeddings and apply attention
+        user_weighted = user_embedded * attention_weights[:, 0].unsqueeze(1)
+        movie_weighted = movie_embedded * attention_weights[:, 1].unsqueeze(1)
+        
+        # Concatenate weighted embeddings
+        weighted_features = torch.cat([user_weighted, movie_weighted], dim=1)
+        
+        return self.layers(weighted_features).squeeze(), attention_weights
+
+def explain_recommendation(model, user_id, movie_id, device):
+    model.eval()
+    with torch.no_grad():
+        user_tensor = torch.tensor([user_id], dtype=torch.long).to(device)
+        movie_tensor = torch.tensor([movie_id], dtype=torch.long).to(device)
+        
+        prediction, attention = model(user_tensor, movie_tensor)
+        
+        # Get embedding representations
+        user_embedding = model.user_embedding(user_tensor)
+        movie_embedding = model.movie_embedding(movie_tensor)
+        
+        # Generate explanation text
+        explanation = (
+            f"Recommendation strength: {prediction.item():.2f}\n"
+            f"Main factors in this recommendation:\n"
+            f"- User preferences: {attention[0, 0].item():.2f}\n"
+            f"- Movie characteristics: {attention[0, 1].item():.2f}\n"
+        )
+        
+        return explanation
+
 def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -97,8 +148,17 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
             ratings = batch["ratings"].to(device)
             
             optimizer.zero_grad()
-            predictions = model(users, movies)
-            loss = criterion(predictions * 5.0, ratings)  # Scale predictions to 0-5 range
+            
+            # Handle tuple return from ExplainableRecommenderSystem
+            output = model(users, movies)
+            if isinstance(output, tuple):
+                predictions, _ = output  # Unpack predictions and attention weights
+            else:
+                predictions = output
+                
+            # Scale predictions to 0-5 range
+            scaled_predictions = predictions * 5.0
+            loss = criterion(scaled_predictions, ratings)
             
             loss.backward()
             optimizer.step()
@@ -123,22 +183,26 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
                 movies = batch["movies"].to(device)
                 ratings = batch["ratings"].to(device)
                 
-                predictions = model(users, movies)
-                loss = criterion(predictions * 5.0, ratings)
+                output = model(users, movies)
+                if isinstance(output, tuple):
+                    predictions, _ = output
+                else:
+                    predictions = output
+                    
+                scaled_predictions = predictions * 5.0
+                loss = criterion(scaled_predictions, ratings)
                 val_loss += loss.item()
         
         avg_val_loss = val_loss / len(val_loader)
         val_losses.append(avg_val_loss)
         
-        # Learning rate scheduling
         scheduler.step(avg_val_loss)
         
         print(f"\nEpoch {epoch+1}/{epochs} - Train Loss: {avg_train_loss:.6f} - Val Loss: {avg_val_loss:.6f}")
         
-        # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), 'best_model.pth')
+            torch.save(model.state_dict(), 'best_model_large.pth')
     
     return train_losses, val_losses
 
@@ -188,7 +252,13 @@ def calculate_metrics(model, val_loader, device):
             ratings = batch["ratings"].to(device)
             
             output = model(users, movies)
-            scaled_output = output * 5.0  # Scale back to 0-5 range
+            # Handle tuple output from ExplainableRecommenderSystem
+            if isinstance(output, tuple):
+                predictions_batch, _ = output  # Unpack predictions and attention weights
+            else:
+                predictions_batch = output
+                
+            scaled_output = predictions_batch * 5.0  # Scale back to 0-5 range
             
             predictions.extend(scaled_output.cpu().numpy())
             actuals.extend(ratings.cpu().numpy())
@@ -270,16 +340,6 @@ def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
     return precision, recall
 
 def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder, top_k=10):
-    # Recommend movies for a user
-    # Args:
-    #     model: Trained model
-    #     user_id: User ID (encoded)
-    #     movie_ids: List of encoded movie IDs
-    #     df_movies: Original movies dataframe
-    #     device: torch device
-    #     movie_encoder: LabelEncoder used for movie IDs
-    #     top_k: Number of recommendations to return
-
     model.eval()
     
     # Create tensors for prediction
@@ -287,8 +347,13 @@ def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder
     movie_tensor = torch.tensor(movie_ids, dtype=torch.long).to(device)
     
     with torch.no_grad():
-        predictions = model(user_tensor, movie_tensor)
-        predictions = predictions.cpu().numpy() * 5.0  # Scale to 0-5 range
+        output = model(user_tensor, movie_tensor)
+        if isinstance(output, tuple):
+            predictions, _ = output
+        else:
+            predictions = output
+            
+        predictions = predictions.cpu().numpy() * 5.0
     
     # Create movie recommendations
     movie_preds = list(zip(movie_ids, predictions))
@@ -298,14 +363,14 @@ def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder
     # Get movie details
     recommended_movies = []
     for encoded_movie_id, pred_rating in top_movies:
-        # Convert encoded ID back to original movie ID
         original_movie_id = movie_encoder.inverse_transform([encoded_movie_id])[0]
         movie_info = df_movies[df_movies['movieId'] == original_movie_id]
         if not movie_info.empty:
             movie_info = movie_info.iloc[0]
             recommended_movies.append({
                 'title': movie_info['title'],
-                'predicted_rating': pred_rating
+                'predicted_rating': pred_rating,
+                'movieId': encoded_movie_id  # Add encoded movieId
             })
     
     return recommended_movies
@@ -338,6 +403,40 @@ def stdout_to_file(filename):
         finally:
             sys.stdout = stdout_backup
             sys.stderr = stderr_backup
+
+def visualize_embeddings(model, users, movies, device):
+    # Create t-SNE visualization of user and movie embeddings
+    from sklearn.manifold import TSNE
+    import seaborn as sns
+    
+    model.eval()
+    with torch.no_grad():
+        # Get embeddings
+        user_embeddings = model.user_embedding(torch.tensor(users).to(device)).cpu().numpy()
+        movie_embeddings = model.movie_embedding(torch.tensor(movies).to(device)).cpu().numpy()
+        
+        # Combine embeddings
+        all_embeddings = np.vstack([user_embeddings, movie_embeddings])
+        
+        # Apply t-SNE
+        tsne = TSNE(n_components=2)
+        embeddings_2d = tsne.fit_transform(all_embeddings)
+        
+        # Plot
+        plt.figure(figsize=(10, 8))
+        sns.scatterplot(
+            x=embeddings_2d[:len(users), 0],
+            y=embeddings_2d[:len(users), 1],
+            label='Users'
+        )
+        sns.scatterplot(
+            x=embeddings_2d[len(users):, 0],
+            y=embeddings_2d[len(users):, 1],
+            label='Movies'
+        )
+        plt.title('User and Movie Embeddings Visualization')
+        plt.savefig('embeddings_visualization_large.png')
+        plt.close()
 
 def main():
     with stdout_to_file('large_data_recommendation.txt'):
@@ -377,8 +476,8 @@ def main():
         train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
         
-        # Initialize model
-        model = DeepRecommenderSystem(
+        # Initialize explainable model instead
+        model = ExplainableRecommenderSystem(
             num_users=len(user_encoder.classes_),
             num_movies=len(movie_encoder.classes_)
         ).to(device)
@@ -419,6 +518,30 @@ def main():
         print(f"\nTop 10 recommended movies for user {sample_user_id}:")
         for i, movie in enumerate(recommendations, 1):
             print(f"{i}. {movie['title']} - Predicted rating: {movie['predicted_rating']:.2f}")
+        
+        # Generate explanations for recommendations
+        print("\nGenerating explanations for recommendations...")
+        sample_user_id = 1
+        recommendations = recommend_movies(model, sample_user_id, movie_ids, movies_df, device, movie_encoder)
+        
+        for i, movie in enumerate(recommendations[:3], 1):
+            explanation = explain_recommendation(
+                model,
+                sample_user_id,
+                movie['movieId'],  # Now this key exists
+                device
+            )
+            print(f"\nExplanation for recommendation {i}:")
+            print(explanation)
+        
+        # Visualize embeddings
+        print("\nGenerating embedding visualization...")
+        visualize_embeddings(
+            model,
+            ratings_df['userId'].unique()[:100],  # Sample 100 users
+            ratings_df['movieId'].unique()[:100],  # Sample 100 movies
+            device
+        )
 
 if __name__ == "__main__":
     main()
