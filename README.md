@@ -39,35 +39,34 @@ mkdir -p databases/ml-latest
 - Extract the datasets, and put the contents of both the small and large datasets (the csv files) into ml-latest-small and ml-latest respectively
 
 ## Project 
-.
-├── databases/                  # Dataset directory (create this)
-    ├── ml-latest-small
-        ├── movies.csv 
-        ├── ratings.csv
-        ├── rating.csv
-        ├── README.txt
-        ├── tags.csv
-    ├── ml-latest
-        ├── genome-scores.csv
-        ├── genome-tags.csv
-        ├── movies.csv 
-        ├── ratings.csv
-        ├── rating.csv
-        ├── README.txt
-        ├── tags.csv
-├── static/                    # Static web assets
-    ├── main.css
-├── templates/                 # Flask HTML templates  
-    ├── about.html
-    ├── base.html
-    ├── home.html
-    ├── recommend.html
-    ├── visualize.html
-├── small_dataset_model.py    # Core recommendation model
-├── large_dataset_model.py    # Scaled up model version
-├── website.py                # Flask web interface
-└── README.md                 # This file
-├── small_data_recommendation.txt    # output after executing small_dataset_model.py
+- databases/                  # Dataset directory (create this)
+    - ml-latest-small
+        - movies.csv 
+        - ratings.csv
+        - rating.csv
+        - README.txt
+        - tags.csv
+    - ml-latest
+        - genome-scores.csv
+        - genome-tags.csv
+        - movies.csv 
+        - ratings.csv
+        - rating.csv
+        - README.txt
+        - tags.csv
+- static/                    # Static web assets
+    - main.css
+- templates/                 # Flask HTML templates  
+    - about.html
+    - base.html
+    - home.html
+    - recommend.html
+    - visualize.html
+- small_dataset_model.py    # Core recommendation model
+- large_dataset_model.py    # Scaled up model version
+- website.py                # Flask web interface
+- README.md                 # This file
+- small_data_recommendation.txt    # output after executing small_dataset_model.py
 
 ## Usage
 
