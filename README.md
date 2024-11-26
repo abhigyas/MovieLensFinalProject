@@ -39,14 +39,20 @@ mkdir -p databases/ml-latest
 - Extract the datasets, and put the contents of both the small and large datasets (the csv files) into ml-latest-small and ml-latest respectively
 
 ## Project 
+- paper
+    - recommender_systems_paper.pdf    # PDF of our research paper
+    - recommender_systems_paper.tex    # LaTex code of our research paper
+- presentation
+    - Recommender Systems Research PPT.pptx    # Powerpoint presentation of our findings
+    - Recommender Systems Research PPT.pdf     # PDF presentation of our findings
 - databases/                  # Dataset directory (create this)
-    - ml-latest-small
+    - ml-latest-small/
         - movies.csv 
         - ratings.csv
         - rating.csv
         - README.txt
         - tags.csv
-    - ml-latest
+    - ml-latest/
         - genome-scores.csv
         - genome-tags.csv
         - movies.csv 
