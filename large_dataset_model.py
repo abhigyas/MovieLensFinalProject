@@ -143,13 +143,6 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     return train_losses, val_losses
 
 def calculate_ndcg(true_ratings, predicted_ratings, k=10):
-    # Calculate NDCG@k for a list of predictions
-    
-    # Args:
-    #     true_ratings: List of true ratings
-    #     predicted_ratings: List of predicted ratings
-    #     k: Number of items to consider
-    # Sort predictions and get top k indices
     top_k_indices = np.argsort(predicted_ratings)[-k:][::-1]
     
     # Get DCG
@@ -249,13 +242,6 @@ def calculate_metrics(model, val_loader, device):
     return rmse, mae, avg_precision, avg_recall, f_measure, avg_ndcg
 
 def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
-    # Args:
-    #     user_id: The user ID
-    #     test_items: Set of items in test set for this user
-    #     recommended_items: List of recommended items (top-10)
-    #     k: Number of recommendations to consider (10)
-
-    # Take only first k recommendations
     recommended_k = recommended_items[:k]
     
     # Count how many recommended items are in test set
@@ -270,16 +256,6 @@ def calculate_precision_recall(user_id, test_items, recommended_items, k=10):
     return precision, recall
 
 def recommend_movies(model, user_id, movie_ids, df_movies, device, movie_encoder, top_k=10):
-    # Recommend movies for a user
-    # Args:
-    #     model: Trained model
-    #     user_id: User ID (encoded)
-    #     movie_ids: List of encoded movie IDs
-    #     df_movies: Original movies dataframe
-    #     device: torch device
-    #     movie_encoder: LabelEncoder used for movie IDs
-    #     top_k: Number of recommendations to return
-
     model.eval()
     
     # Create tensors for prediction
