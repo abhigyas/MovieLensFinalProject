@@ -134,8 +134,7 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.001):
     
     train_losses = []
     val_losses = []
-    best_val_loss = float('inf')
-    
+    best_val_loss = float('inf')    
     for epoch in range(epochs):
         # Training phase
         model.train()
