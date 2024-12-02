@@ -1,7 +1,7 @@
 Flask==3.1.0
 gunicorn==23.0.0
+numpy==1.24.3  # Lower version compatible with PyTorch
 pandas==2.2.3
-numpy==2.1.3
 scikit-learn==1.5.2
 matplotlib==3.9.3
 seaborn==0.13.2

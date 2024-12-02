@@ -266,8 +266,9 @@ def create_app():
         )
         return response
 
-    return app  # Added return statement
+    return app
 
-if __name__ == '__main__':
-    app = create_app()
+app = create_app()
+
+if __name__ == "__main__":
     app.run(debug=True)
