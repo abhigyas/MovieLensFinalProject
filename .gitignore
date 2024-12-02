@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 
 # C extensions
@@ -174,3 +175,4 @@ databases/ml-latest/README.txt
 databases/ml-latest-small/README.txt
 /databases/
 /data/
+*.pth
