@@ -11,7 +11,7 @@ import numpy as np
 import gc
 
 def load_model_and_data():
-    device = torch.device("cpu")  # Force CPU
+    device = torch.device("cpu")
     ratings_df = pd.read_csv("data/ratings.csv")
     movies_df = pd.read_csv("data/movies.csv")
     
@@ -21,14 +21,21 @@ def load_model_and_data():
     ratings_df['userId'] = user_encoder.fit_transform(ratings_df['userId'])
     ratings_df['movieId'] = movie_encoder.fit_transform(ratings_df['movieId'])
     
-    # Load model with reduced size
+    # Match original architecture sizes
     model = ExplainableRecommenderSystem(
         num_users=len(user_encoder.classes_),
         num_movies=len(movie_encoder.classes_),
-        embedding_size=64  # Reduced from 128
+        embedding_size=128  # Match saved model size
     ).to(device)
     
-    model.load_state_dict(torch.load('best_model.pth', map_location=device))
+    # Add weights_only=True for security
+    model.load_state_dict(
+        torch.load(
+            'best_model.pth',
+            map_location=device,
+            weights_only=True
+        )
+    )
     model.eval()
     
     # Clear memory
