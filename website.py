@@ -196,20 +196,28 @@ def create_app():
     def visualize():
         try:
             # Now ratings_df and movies_df are accessible
-            ratings_hash = df_hash(ratings_df)
-            movies_hash = df_hash(movies_df)
+            epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
             
-            # Get plots using cached function
-            plots = generate_visualizations(ratings_hash, movies_hash)
+            if not epochs:
+                return render_template('error.html', 
+                                    message="No training history available")
             
-            if not plots:
-                return render_template('error.html', message="Could not generate visualizations")
-                
-            graphJSON = json.dumps([fig.to_dict() for fig in plots])
+            train_fig = px.line(
+                {
+                    'Epoch': epochs + epochs,
+                    'Loss': train_losses + val_losses,
+                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
+                },
+                x='Epoch', y='Loss', color='Type',
+                title='Model Training Progress'
+            )
+            
+            graphJSON = json.dumps(train_fig.to_dict(), cls=plotly.utils.PlotlyJSONEncoder)
             return render_template('visualize.html', graphJSON=graphJSON)
         except Exception as e:
             app.logger.error(f"Error in visualization: {str(e)}")
-            return render_template('error.html', message="Error generating visualizations")
+            return render_template('error.html', 
+                                 message="Could not generate visualizations")
 
     @app.route('/about')
     def about():
@@ -233,6 +241,10 @@ def create_app():
         )
         return response
 
+    def df_hash(df):
+        """Create hash from DataFrame content."""
+        return hash(str(df.values.tobytes()))
+
     return app
 
 app = create_app()
@@ -240,10 +252,6 @@ app = create_app()
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)
-
-def df_hash(df):
-    """Create hash from DataFrame content."""
-    return hash(str(df.values.tobytes()))
 
 @lru_cache(maxsize=1)
 def generate_visualizations(ratings_hash, movies_hash):
@@ -272,18 +280,26 @@ def generate_visualizations(ratings_hash, movies_hash):
 @app.route('/visualize')
 def visualize():
     try:
-        # Generate hashes for DataFrames
-        ratings_hash = df_hash(ratings_df)
-        movies_hash = df_hash(movies_df)
+        # Now ratings_df and movies_df are accessible
+        epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
         
-        # Get plots using cached function
-        plots = generate_visualizations(ratings_hash, movies_hash)
+        if not epochs:
+            return render_template('error.html', 
+                                message="No training history available")
         
-        if not plots:
-            return render_template('error.html', message="Could not generate visualizations")
-            
-        graphJSON = json.dumps([fig.to_dict() for fig in plots])
+        train_fig = px.line(
+            {
+                'Epoch': epochs + epochs,
+                'Loss': train_losses + val_losses,
+                'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
+            },
+            x='Epoch', y='Loss', color='Type',
+            title='Model Training Progress'
+        )
+        
+        graphJSON = json.dumps(train_fig.to_dict(), cls=plotly.utils.PlotlyJSONEncoder)
         return render_template('visualize.html', graphJSON=graphJSON)
     except Exception as e:
         app.logger.error(f"Error in visualization: {str(e)}")
-        return render_template('error.html', message="Error generating visualizations")
+        return render_template('error.html', 
+                             message="Could not generate visualizations")
