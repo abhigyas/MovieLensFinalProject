@@ -2,76 +2,57 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="visualizations-container">
-    <h2 class="text-center mb-4">Data Analysis & Model Performance</h2>
-    
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="plot-container">
-                <div id="plot0" class="plot"></div>
-            </div>
-        </div>
-        <div class="col-12 mb-4">
-            <div class="plot-container">
-                <div id="plot1" class="plot"></div>
-            </div>
-        </div>
-        <div class="col-12 mb-4">
-            <div class="plot-container">
-                <div id="plot2" class="plot"></div>
-            </div>
-        </div>
-        <div class="col-12 mb-4">
-            <div class="plot-container">
-                <div id="plot3" class="plot"></div>
-            </div>
-        </div>
-        <div class="col-12 mb-4">
-            <div class="plot-container">
-                <div id="plot4" class="plot"></div>
-            </div>
-        </div>
+    <h2 class="text-center mb-4">Model Training Progress</h2>
+    <div class="plot-container">
+        <div id="trainingPlot"></div>
     </div>
 </div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     try {
-        const graphData = JSON.parse('{{ graphJSON | safe }}');
-        if (!Array.isArray(graphData)) {
-            throw new Error('Expected array of graph data');
-        }
-        
+        // Create traces directly
+        const traces = [
+            {
+                x: {{ epochs | tojson }},
+                y: {{ train_losses | tojson }},
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Training Loss'
+            },
+            {
+                x: {{ epochs | tojson }},
+                y: {{ val_losses | tojson }},
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Validation Loss'
+            }
+        ];
+
+        const layout = {
+            title: 'Model Training Progress',
+            xaxis: {title: 'Epoch'},
+            yaxis: {title: 'Loss'}
+        };
+
         const config = {
             responsive: true,
-            displayModeBar: false
+            displayModeBar: true
         };
 
-        const defaultLayout = {
-            autosize: true,
-            height: 500,
-            margin: {t: 30, r: 10, b: 30, l: 60}
-        };
-
-        graphData.forEach((graph, i) => {
-            const element = document.getElementById(`plot${i}`);
-            if (element) {
-                Plotly.newPlot(
-                    element,
-                    graph.data,
-                    {...defaultLayout, ...graph.layout},
-                    config
-                ).catch(err => console.error(`Error plotting graph ${i}:`, err));
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            graphData.forEach((_, i) => {
-                const plot = document.getElementById(`plot${i}`);
-                if (plot) Plotly.Plots.resize(plot);
+        Plotly.newPlot('trainingPlot', traces, layout, config)
+            .catch(err => {
+                console.error('Plot error:', err);
+                document.getElementById('trainingPlot').innerHTML = 
+                    '<div class="alert alert-danger">Failed to create plot</div>';
             });
-        });
+
     } catch (error) {
         console.error('Plot initialization error:', error);
+        document.getElementById('trainingPlot').innerHTML = 
+            '<div class="alert alert-danger">Failed to initialize plot</div>';
     }
 });
 </script>
@@ -79,12 +60,13 @@ document.addEventListener('DOMContentLoaded', function() {
 <style>
 .plot-container {
     background: white;
-    padding: 15px;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px 0;
 }
 
-.plot {
+#trainingPlot {
     width: 100%;
     height: 500px;
 }

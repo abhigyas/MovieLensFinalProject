@@ -194,29 +194,25 @@ def create_app():
     @app.route('/visualize')
     def visualize():
         try:
-            # Load training history directly
             epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
             
             if not epochs:
-                return render_template('error.html', 
-                                    message="No training history available")
-            
-            train_fig = px.line(
-                {
-                    'Epoch': epochs + epochs,
-                    'Loss': train_losses + val_losses,
-                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
-                },
-                x='Epoch', y='Loss', color='Type',
-                title='Model Training Progress'
+                return render_template('error.html', message="No training history available")
+
+            app.logger.debug(f"Epochs: {epochs}")
+            app.logger.debug(f"Training Losses: {train_losses}")
+            app.logger.debug(f"Validation Losses: {val_losses}")
+
+            return render_template(
+                'visualize.html',
+                epochs=epochs,
+                train_losses=train_losses,
+                val_losses=val_losses
             )
             
-            graphJSON = json.dumps(train_fig.to_dict(), cls=plotly.utils.PlotlyJSONEncoder)
-            return render_template('visualize.html', graphJSON=graphJSON)
         except Exception as e:
             app.logger.error(f"Error in visualization: {str(e)}")
-            return render_template('error.html', 
-                                 message="Could not generate visualizations")
+            return render_template('error.html', message="Could not generate visualizations")
 
     @app.route('/about')
     def about():
