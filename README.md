@@ -18,8 +18,7 @@ A deep learning-based movie recommendation system implemented in PyTorch that pr
 - Flask
 - pandas
 - numpy
-- scikit-learn
-- matplotlib 
+- scikit-learn 
 - seaborn
 - plotly
 
@@ -27,39 +26,13 @@ Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-## Dataset Setup
-
-- Create a databases directory in the project root:
-```bash
-mkdir -p databases/ml-latest-small
-mkdir -p databases/ml-latest
-```
-- Download the MovieLens datasets: https://grouplens.org/datasets/movielens/latest/
-- We are using the small dataset for this project as this is the only dataset that our devices can run
-- Extract the datasets, and put the contents of both the small and large datasets (the csv files) into ml-latest-small and ml-latest respectively
 
 ## Project 
 - paper
-    - recommender_systems_paper.pdf    # PDF of our research paper
-    - recommender_systems_paper.tex    # LaTex code of our research paper
-- presentation
-    - Recommender Systems Research PPT.pptx    # Powerpoint presentation of our findings
-    - Recommender Systems Research PPT.pdf     # PDF presentation of our findings
-- databases/                  # Dataset directory (create this)
-    - ml-latest-small/
-        - movies.csv 
-        - ratings.csv
-        - rating.csv
-        - README.txt
-        - tags.csv
-    - ml-latest/
-        - genome-scores.csv
-        - genome-tags.csv
-        - movies.csv 
-        - ratings.csv
-        - rating.csv
-        - README.txt
-        - tags.csv
+    - recommender_systems_paper.tex    # LaTex file of our research paper
+- data/                                
+    - movies.csv 
+    - ratings.csv
 - static/                    # Static web assets
     - main.css
 - templates/                 # Flask HTML templates  
@@ -69,23 +42,19 @@ mkdir -p databases/ml-latest
     - recommend.html
     - visualize.html
 - small_dataset_model.py    # Core recommendation model
-- large_dataset_model.py    # Scaled up model version
 - website.py                # Flask web interface
 - README.md                 # This file
 - small_data_recommendation.txt    # output after executing small_dataset_model.py
 
 ## Usage
 
-- Train the model using either the small or large dataset:
+- Train the model using the dataset:
 
-- For small dataset (Run small dataset for the best results as the findings will be shown on the website)
+- For dataset 
 ```bash
 python small_dataset_model.py
 ```
-- For large dataset (Note: The large dataset model has not been tested completely due to hardware constraints, so only run with good hardware. This also means that the website will not reflect large dataset findings)
-```bash
-python large_dataset_model.py
-```
+
 - Run the website interface
 ```bash
 python website.py
@@ -120,14 +89,16 @@ python website.py
 ## Important Files
 
 - small_dataset_model.py: Core model for MovieLens small dataset
-- large_dataset_model.py: Scaled version for full MovieLens dataset
 - website.py: Flask web application
 - templates: HTML templates for web interface
 - static: CSS, JavaScript and images
-- databases: Dataset storage (not included in repo)
+- databases: Dataset storage
 
 ## Contributors
 
 - Abhigya Sinha
 - Bhavya Patel
 - Paul Kanyuch
+
+## This project has been deployed!
+You can access the deployed project at [MovieLens Recommender System](https://movielens-recommender-system-52253e175e9b.herokuapp.com/recommend)
