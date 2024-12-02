@@ -75,13 +75,18 @@ def create_app():
     @app.route('/')
     def home():
         metrics = {}
-        with open('small_data_recommendation.txt', 'r') as f:
-            for line in f:
-                if any(metric in line for metric in ['RMSE:', 'MAE:', 'Precision@10:', 'Recall@10:', 'F-measure:', 'NDCG@10:']):
-                    key, value = line.strip().split(': ')
-                    key = key.replace('@10', '\n@10')
-                    key = key.replace('measure', 'measure\n')
-                    metrics[key] = float(value)
+        try:
+            with open('small_data_recommendation.txt', 'r', encoding='latin-1') as f:
+                for line in f:
+                    if any(metric in line for metric in ['RMSE:', 'MAE:', 'Precision@10:', 'Recall@10:', 'F-measure:', 'NDCG@10:']):
+                        key, value = line.strip().split(': ')
+                        key = key.replace('@10', '\n@10')
+                        key = key.replace('measure', 'measure\n')
+                        metrics[key] = float(value)
+        except Exception as e:
+            app.logger.error(f"Error reading metrics: {str(e)}")
+            metrics = {"Error": "Could not load metrics"}
+        
         return render_template('home.html', metrics=metrics)
 
     @app.route('/recommend', methods=['GET', 'POST'])
