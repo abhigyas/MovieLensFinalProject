@@ -174,7 +174,11 @@ databases/ml-latest-small/tags.csv
 databases/ml-latest/README.txt
 databases/ml-latest-small/README.txt
 /databases/
-/data/
+# /data/
+# *.csv
+data/*
+!data/ratings.csv
+!data/movies.csv
 *.pth
 small_dataset_model.py
 training_history.png
