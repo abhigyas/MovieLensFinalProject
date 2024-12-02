@@ -79,7 +79,6 @@ def parse_training_history(filename):
 
 def create_app():
     app = Flask(__name__)
-    app.config['PORT'] = int(os.environ.get('PORT', 8000))
     global ratings_df, movies_df, model, device
     
     # Load model and data
@@ -195,7 +194,7 @@ def create_app():
     @app.route('/visualize')
     def visualize():
         try:
-            # Now ratings_df and movies_df are accessible
+            # Load training history directly
             epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
             
             if not epochs:
@@ -242,64 +241,14 @@ def create_app():
         return response
 
     def df_hash(df):
-        """Create hash from DataFrame content."""
         return hash(str(df.values.tobytes()))
 
     return app
 
+# Initialize Flask app
 app = create_app()
 
+# Only include this if running directly
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)
-
-@lru_cache(maxsize=1)
-def generate_visualizations(ratings_hash, movies_hash):
-    try:
-        plots = []
-        
-        # Create training history plot if file exists
-        epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
-        if epochs:
-            train_fig = px.line(
-                {
-                    'Epoch': epochs + epochs,
-                    'Loss': train_losses + val_losses,
-                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
-                },
-                x='Epoch', y='Loss', color='Type',
-                title='Model Training Progress'
-            )
-            plots.append(train_fig)
-            
-        return plots
-    except Exception as e:
-        app.logger.error(f"Visualization error: {str(e)}")
-        return []
-
-@app.route('/visualize')
-def visualize():
-    try:
-        # Now ratings_df and movies_df are accessible
-        epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
-        
-        if not epochs:
-            return render_template('error.html', 
-                                message="No training history available")
-        
-        train_fig = px.line(
-            {
-                'Epoch': epochs + epochs,
-                'Loss': train_losses + val_losses,
-                'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
-            },
-            x='Epoch', y='Loss', color='Type',
-            title='Model Training Progress'
-        )
-        
-        graphJSON = json.dumps(train_fig.to_dict(), cls=plotly.utils.PlotlyJSONEncoder)
-        return render_template('visualize.html', graphJSON=graphJSON)
-    except Exception as e:
-        app.logger.error(f"Error in visualization: {str(e)}")
-        return render_template('error.html', 
-                             message="Could not generate visualizations")
