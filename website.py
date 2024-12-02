@@ -1,4 +1,3 @@
-# website.py
 import os
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
@@ -166,37 +165,36 @@ def create_app():
             )
         return render_template('recommend.html')
 
+    # Cache key generator for DataFrames
+    def df_cache_key(*args, **kwargs):
+        df_args = []
+        for arg in args:
+            if isinstance(arg, pd.DataFrame):
+                df_args.append(hash(str(arg.index.values.tolist())))
+            else:
+                df_args.append(arg)
+        return tuple(df_args)
+
     # Cache visualization computation
     @lru_cache(maxsize=1)
-    def generate_visualizations(ratings_df, movies_df, model, device):
+    def generate_visualizations(df_key, model, device):
         try:
             plots = []
-            # Add existing visualization code but with smaller samples
-            user_sample = ratings_df['userId'].unique()[:50]  # Reduced from 100
-            movie_sample = ratings_df['movieId'].unique()[:50]  # Reduced from 100
-            
-            with torch.no_grad():
-                user_embeddings = model.user_embedding(torch.tensor(user_sample).to(device)).cpu().numpy()
-                movie_embeddings = model.movie_embedding(torch.tensor(movie_sample).to(device)).cpu().numpy()
-            
-            # Clear memory
-            gc.collect()
-            torch.cuda.empty_cache()
-            
-            # Return plots
+            # Add visualization code
             return plots
         except Exception as e:
+            app.logger.error(f"Visualization error: {str(e)}")
             return []
 
     @app.route('/visualize')
     def visualize():
         try:
-            # Generate plots with caching
-            plots = generate_visualizations(ratings_df, movies_df, model, device)
+            df_key = df_cache_key(ratings_df, movies_df)
+            plots = generate_visualizations(df_key, model, device)
             if not plots:
                 return render_template('error.html', message="Could not generate visualizations")
                 
-            graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
+            graphJSON = json.dumps([fig.to_dict() for fig in plots])
             return render_template('visualize.html', graphJSON=graphJSON)
         except Exception as e:
             app.logger.error(f"Error in visualization: {str(e)}")
