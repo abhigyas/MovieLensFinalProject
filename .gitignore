@@ -176,3 +176,6 @@ databases/ml-latest-small/README.txt
 /databases/
 /data/
 *.pth
+small_dataset_model.py
+training_history.png
+/presentation/
