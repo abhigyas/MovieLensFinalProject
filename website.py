@@ -11,6 +11,11 @@ import numpy as np
 import gc
 from functools import lru_cache
 
+ratings_df = None
+movies_df = None
+model = None
+device = None
+
 def load_model_and_data():
     device = torch.device("cpu")
     ratings_df = pd.read_csv("data/ratings.csv")
@@ -75,6 +80,7 @@ def parse_training_history(filename):
 def create_app():
     app = Flask(__name__)
     app.config['PORT'] = int(os.environ.get('PORT', 8000))
+    global ratings_df, movies_df, model, device
     
     # Load model and data
     model, ratings_df, movies_df, user_encoder, movie_encoder, device = load_model_and_data()
@@ -189,8 +195,13 @@ def create_app():
     @app.route('/visualize')
     def visualize():
         try:
-            df_key = df_cache_key(ratings_df, movies_df)
-            plots = generate_visualizations(df_key, model, device)
+            # Now ratings_df and movies_df are accessible
+            ratings_hash = df_hash(ratings_df)
+            movies_hash = df_hash(movies_df)
+            
+            # Get plots using cached function
+            plots = generate_visualizations(ratings_hash, movies_hash)
+            
             if not plots:
                 return render_template('error.html', message="Could not generate visualizations")
                 
@@ -229,3 +240,50 @@ app = create_app()
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)
+
+def df_hash(df):
+    """Create hash from DataFrame content."""
+    return hash(str(df.values.tobytes()))
+
+@lru_cache(maxsize=1)
+def generate_visualizations(ratings_hash, movies_hash):
+    try:
+        plots = []
+        
+        # Create training history plot if file exists
+        epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
+        if epochs:
+            train_fig = px.line(
+                {
+                    'Epoch': epochs + epochs,
+                    'Loss': train_losses + val_losses,
+                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
+                },
+                x='Epoch', y='Loss', color='Type',
+                title='Model Training Progress'
+            )
+            plots.append(train_fig)
+            
+        return plots
+    except Exception as e:
+        app.logger.error(f"Visualization error: {str(e)}")
+        return []
+
+@app.route('/visualize')
+def visualize():
+    try:
+        # Generate hashes for DataFrames
+        ratings_hash = df_hash(ratings_df)
+        movies_hash = df_hash(movies_df)
+        
+        # Get plots using cached function
+        plots = generate_visualizations(ratings_hash, movies_hash)
+        
+        if not plots:
+            return render_template('error.html', message="Could not generate visualizations")
+            
+        graphJSON = json.dumps([fig.to_dict() for fig in plots])
+        return render_template('visualize.html', graphJSON=graphJSON)
+    except Exception as e:
+        app.logger.error(f"Error in visualization: {str(e)}")
+        return render_template('error.html', message="Error generating visualizations")
