@@ -179,6 +179,8 @@ databases/ml-latest-small/README.txt
 data/*
 !data/ratings.csv
 !data/movies.csv
+!data/links.csv
+!data/tags.csv
 *.pth
 small_dataset_model.py
 training_history.png

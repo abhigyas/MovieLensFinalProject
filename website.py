@@ -194,22 +194,100 @@ def create_app():
     @app.route('/visualize')
     def visualize():
         try:
+            # 1. Training Progress
             epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
-            
             if not epochs:
                 return render_template('error.html', message="No training history available")
 
-            app.logger.debug(f"Epochs: {epochs}")
-            app.logger.debug(f"Training Losses: {train_losses}")
-            app.logger.debug(f"Validation Losses: {val_losses}")
-
-            return render_template(
-                'visualize.html',
-                epochs=epochs,
-                train_losses=train_losses,
-                val_losses=val_losses
+            fig1 = px.line(
+                {
+                    'Epoch': epochs + epochs,
+                    'Loss': train_losses + val_losses,
+                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
+                },
+                x='Epoch', y='Loss', color='Type',
+                title='Model Training Progress'
             )
-            
+
+            # 2. User Activity Distribution
+            user_activity = ratings_df['userId'].value_counts()
+            fig2 = px.histogram(
+                user_activity,
+                title='User Activity Distribution',
+                labels={'value': 'Number of Ratings', 'count': 'Number of Users'},
+                nbins=50
+            )
+
+            # 3. Rating Distribution by Genre
+            movies_with_ratings = pd.merge(ratings_df, movies_df, on='movieId')
+            movies_with_ratings['genre'] = movies_with_ratings['genres'].str.split('|')
+            genre_ratings = movies_with_ratings.explode('genre')
+            fig3 = px.box(
+                genre_ratings,
+                x='genre',
+                y='rating',
+                title='Rating Distribution by Genre'
+            )
+
+            # 4. Rating Trends Over Time
+            ratings_df['timestamp'] = pd.to_datetime(ratings_df['timestamp'], unit='s')
+            ratings_over_time = ratings_df.set_index('timestamp')['rating'].resample('M').mean()
+            fig4 = px.line(
+                ratings_over_time,
+                title='Average Rating Trend Over Time',
+                labels={'value': 'Average Rating', 'timestamp': 'Date'}
+            )
+
+            # 5. Movie Popularity vs Average Rating
+            movie_stats = ratings_df.groupby('movieId').agg({
+                'rating': ['count', 'mean']
+            }).reset_index()
+            movie_stats.columns = ['movieId', 'rating_count', 'avg_rating']
+            fig5 = px.scatter(
+                movie_stats,
+                x='rating_count',
+                y='avg_rating',
+                title='Movie Popularity vs Average Rating',
+                labels={'rating_count': 'Number of Ratings', 'avg_rating': 'Average Rating'},
+                opacity=0.6
+            )
+
+            # Collect all plots
+            plots = [fig1, fig2, fig3, fig4, fig5]
+
+            # 6. Add embedding visualization
+            try:
+                user_sample = ratings_df['userId'].unique()[:100]
+                movie_sample = ratings_df['movieId'].unique()[:100]
+                
+                with torch.no_grad():
+                    user_embeddings = model.user_embedding(torch.tensor(user_sample).to(device)).cpu().numpy()
+                    movie_embeddings = model.movie_embedding(torch.tensor(movie_sample).to(device)).cpu().numpy()
+                
+                tsne = TSNE(n_components=2, random_state=42)
+                embeddings_2d = tsne.fit_transform(np.vstack([user_embeddings, movie_embeddings]))
+                
+                embedding_df = pd.DataFrame(
+                    embeddings_2d,
+                    columns=['x', 'y']
+                )
+                embedding_df['type'] = ['User'] * len(user_sample) + ['Movie'] * len(movie_sample)
+                
+                fig_embeddings = px.scatter(
+                    embedding_df, 
+                    x='x', 
+                    y='y', 
+                    color='type',
+                    title='User and Movie Embeddings Visualization'
+                )
+                plots.append(fig_embeddings)
+            except Exception as e:
+                app.logger.warning(f"Failed to generate embeddings visualization: {str(e)}")
+
+            # Convert to JSON and render template
+            graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
+            return render_template('visualize.html', graphJSON=graphJSON)
+
         except Exception as e:
             app.logger.error(f"Error in visualization: {str(e)}")
             return render_template('error.html', message="Could not generate visualizations")
