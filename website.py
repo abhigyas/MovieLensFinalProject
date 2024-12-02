@@ -8,23 +8,32 @@ import json
 import plotly
 import plotly.express as px
 import numpy as np
+import gc
 
 def load_model_and_data():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")  # Force CPU
     ratings_df = pd.read_csv("data/ratings.csv")
     movies_df = pd.read_csv("data/movies.csv")
     
+    # Load encoders
     user_encoder = LabelEncoder()
     movie_encoder = LabelEncoder()
     ratings_df['userId'] = user_encoder.fit_transform(ratings_df['userId'])
     ratings_df['movieId'] = movie_encoder.fit_transform(ratings_df['movieId'])
     
+    # Load model with reduced size
     model = ExplainableRecommenderSystem(
         num_users=len(user_encoder.classes_),
-        num_movies=len(movie_encoder.classes_)
+        num_movies=len(movie_encoder.classes_),
+        embedding_size=64  # Reduced from 128
     ).to(device)
-    model.load_state_dict(torch.load('best_model.pth', weights_only=True))
+    
+    model.load_state_dict(torch.load('best_model.pth', map_location=device))
     model.eval()
+    
+    # Clear memory
+    gc.collect()
+    torch.cuda.empty_cache()
     
     return model, ratings_df, movies_df, user_encoder, movie_encoder, device
 
