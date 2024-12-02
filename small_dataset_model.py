@@ -8,7 +8,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from collections import defaultdict
 import sys
-import matplotlib.pyplot as plt
 from contextlib import contextmanager
 
 class MovieLensDataset(Dataset):
@@ -389,40 +388,6 @@ def stdout_to_file(filename):
             sys.stdout = stdout_backup
             sys.stderr = stderr_backup
 
-def visualize_embeddings(model, users, movies, device):
-    # Create t-SNE visualization of user and movie embeddings
-    from sklearn.manifold import TSNE
-    import seaborn as sns
-    
-    model.eval()
-    with torch.no_grad():
-        # Get embeddings
-        user_embeddings = model.user_embedding(torch.tensor(users).to(device)).cpu().numpy()
-        movie_embeddings = model.movie_embedding(torch.tensor(movies).to(device)).cpu().numpy()
-        
-        # Combine embeddings
-        all_embeddings = np.vstack([user_embeddings, movie_embeddings])
-        
-        # Apply t-SNE
-        tsne = TSNE(n_components=2)
-        embeddings_2d = tsne.fit_transform(all_embeddings)
-        
-        # Plot
-        plt.figure(figsize=(10, 8))
-        sns.scatterplot(
-            x=embeddings_2d[:len(users), 0],
-            y=embeddings_2d[:len(users), 1],
-            label='Users'
-        )
-        sns.scatterplot(
-            x=embeddings_2d[len(users):, 0],
-            y=embeddings_2d[len(users):, 1],
-            label='Movies'
-        )
-        plt.title('User and Movie Embeddings Visualization')
-        plt.savefig('embeddings_visualization.png')
-        plt.close()
-
 def main():
     with stdout_to_file('small_data_recommendation.txt'):
         # Set device
@@ -471,17 +436,6 @@ def main():
         print("\nStarting training...")
         train_losses, val_losses = train_model(model, train_loader, val_loader, device)
         
-        # Plot training history
-        plt.figure(figsize=(10, 6))
-        plt.plot(train_losses, label='Training Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training History')
-        plt.legend()
-        plt.savefig('training_history.png')
-        plt.close()
-        
         # Calculate metrics
         print("\nCalculating metrics...")
         rmse, mae, precision, recall, f_measure, ndcg = calculate_metrics(model, val_loader, device)
@@ -518,15 +472,6 @@ def main():
             )
             print(f"\nExplanation for recommendation {i}:")
             print(explanation)
-        
-        # Visualize embeddings
-        print("\nGenerating embedding visualization...")
-        visualize_embeddings(
-            model,
-            ratings_df['userId'].unique()[:100],  # Sample 100 users
-            ratings_df['movieId'].unique()[:100],  # Sample 100 movies
-            device
-        )
 
 if __name__ == "__main__":
     main()
