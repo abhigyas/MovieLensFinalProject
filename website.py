@@ -1,4 +1,5 @@
 # website.py
+import os
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import torch
@@ -66,6 +67,7 @@ def parse_training_history(filename):
 
 def create_app():
     app = Flask(__name__)
+    app.config['PORT'] = int(os.environ.get('PORT', 8000))
     
     # Load model and data
     model, ratings_df, movies_df, user_encoder, movie_encoder, device = load_model_and_data()
@@ -271,4 +273,5 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 8000))
+    app.run(host='0.0.0.0', port=port)

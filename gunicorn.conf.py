@@ -1,10 +1,11 @@
+import os
 import multiprocessing
 
-bind = "0.0.0.0:10000"
+bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
 # Reduce number of workers
 workers = 2
 # Reduce timeout
-timeout = 60
+timeout = 120
 # Add max requests settings
 max_requests = 1000
 max_requests_jitter = 50
