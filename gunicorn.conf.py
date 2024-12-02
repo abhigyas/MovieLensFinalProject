@@ -7,7 +7,7 @@ bind = f"0.0.0.0:{int(os.environ.get('PORT', 8000))}"
 workers = 1
 
 # Increase timeout
-timeout = 300
+timeout = 30  # Reduce from 300
 
 # Reduce requests
 max_requests = 100
@@ -15,7 +15,7 @@ max_requests_jitter = 10
 
 # Basic worker settings
 worker_class = "sync"
-worker_connections = 100
+worker_connections = 50  # Reduce connections
 
 # Memory settings
 worker_tmp_dir = "/dev/shm"
@@ -29,7 +29,10 @@ loglevel = 'debug'
 preload_app = True
 
 # Add graceful timeout
-graceful_timeout = 120
+graceful_timeout = 30  # Reduce from 120
 
 # Force port in app
 raw_env = [f"PORT={os.environ.get('PORT', 8000)}"]
+
+# Keepalive
+keepalive = 2
