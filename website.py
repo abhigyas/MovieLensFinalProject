@@ -51,18 +51,25 @@ def parse_training_history(filename):
     epochs = []
     current_epoch = 0
     
-    with open(filename, 'r') as f:
-        for line in f:
-            if 'Train Loss:' in line and 'Val Loss:' in line:
-                # Extract both train and val loss
-                parts = line.strip().split(' - ')
-                train_loss = float(parts[1].split(': ')[1])
-                val_loss = float(parts[2].split(': ')[1])
-                train_losses.append(train_loss)
-                val_losses.append(val_loss)
-                epochs.append(current_epoch)
-                current_epoch += 1
-    
+    try:
+        with open(filename, 'r', encoding='latin-1') as f:
+            for line in f:
+                if 'Train Loss:' in line and 'Val Loss:' in line:
+                    try:
+                        parts = line.strip().split(' - ')
+                        train_loss = float(parts[1].split(': ')[1])
+                        val_loss = float(parts[2].split(': ')[1])
+                        train_losses.append(train_loss)
+                        val_losses.append(val_loss)
+                        epochs.append(current_epoch)
+                        current_epoch += 1
+                    except (IndexError, ValueError) as e:
+                        app.logger.error(f"Error parsing line: {line}, Error: {str(e)}")
+                        continue
+    except Exception as e:
+        app.logger.error(f"Error reading training history: {str(e)}")
+        return [], [], []
+        
     return epochs, train_losses, val_losses
 
 def create_app():
@@ -160,96 +167,100 @@ def create_app():
 
     @app.route('/visualize')
     def visualize():
-        # 1. Training Progress
-        epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
-        fig1 = px.line(
-            {
-                'Epoch': epochs + epochs,
-                'Loss': train_losses + val_losses,
-                'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
-            },
-            x='Epoch', y='Loss', color='Type',
-            title='Model Training Progress'
-        )
+        try:
+            # 1. Training Progress
+            epochs, train_losses, val_losses = parse_training_history('small_data_recommendation.txt')
+            fig1 = px.line(
+                {
+                    'Epoch': epochs + epochs,
+                    'Loss': train_losses + val_losses,
+                    'Type': ['Training']*len(epochs) + ['Validation']*len(epochs)
+                },
+                x='Epoch', y='Loss', color='Type',
+                title='Model Training Progress'
+            )
 
-        # 2. User Activity Distribution
-        user_activity = ratings_df['userId'].value_counts()
-        fig2 = px.histogram(
-            user_activity,
-            title='User Activity Distribution',
-            labels={'value': 'Number of Ratings', 'count': 'Number of Users'},
-            nbins=50
-        )
+            # 2. User Activity Distribution
+            user_activity = ratings_df['userId'].value_counts()
+            fig2 = px.histogram(
+                user_activity,
+                title='User Activity Distribution',
+                labels={'value': 'Number of Ratings', 'count': 'Number of Users'},
+                nbins=50
+            )
 
-        # 3. Rating Distribution by Genre
-        movies_with_ratings = pd.merge(ratings_df, movies_df, on='movieId')
-        movies_with_ratings['genre'] = movies_with_ratings['genres'].str.split('|')
-        genre_ratings = movies_with_ratings.explode('genre')
-        fig3 = px.box(
-            genre_ratings,
-            x='genre',
-            y='rating',
-            title='Rating Distribution by Genre'
-        )
+            # 3. Rating Distribution by Genre
+            movies_with_ratings = pd.merge(ratings_df, movies_df, on='movieId')
+            movies_with_ratings['genre'] = movies_with_ratings['genres'].str.split('|')
+            genre_ratings = movies_with_ratings.explode('genre')
+            fig3 = px.box(
+                genre_ratings,
+                x='genre',
+                y='rating',
+                title='Rating Distribution by Genre'
+            )
 
-        # 4. Rating Trends Over Time
-        ratings_df['timestamp'] = pd.to_datetime(ratings_df['timestamp'], unit='s')
-        ratings_over_time = ratings_df.set_index('timestamp')['rating'].resample('M').mean()
-        fig4 = px.line(
-            ratings_over_time,
-            title='Average Rating Trend Over Time',
-            labels={'value': 'Average Rating', 'timestamp': 'Date'}
-        )
+            # 4. Rating Trends Over Time
+            ratings_df['timestamp'] = pd.to_datetime(ratings_df['timestamp'], unit='s')
+            ratings_over_time = ratings_df.set_index('timestamp')['rating'].resample('M').mean()
+            fig4 = px.line(
+                ratings_over_time,
+                title='Average Rating Trend Over Time',
+                labels={'value': 'Average Rating', 'timestamp': 'Date'}
+            )
 
-        # 5. Movie Popularity vs Average Rating
-        movie_stats = ratings_df.groupby('movieId').agg({
-            'rating': ['count', 'mean']
-        }).reset_index()
-        movie_stats.columns = ['movieId', 'rating_count', 'avg_rating']
-        fig5 = px.scatter(
-            movie_stats,
-            x='rating_count',
-            y='avg_rating',
-            title='Movie Popularity vs Average Rating',
-            labels={'rating_count': 'Number of Ratings', 'avg_rating': 'Average Rating'},
-            opacity=0.6
-        )
+            # 5. Movie Popularity vs Average Rating
+            movie_stats = ratings_df.groupby('movieId').agg({
+                'rating': ['count', 'mean']
+            }).reset_index()
+            movie_stats.columns = ['movieId', 'rating_count', 'avg_rating']
+            fig5 = px.scatter(
+                movie_stats,
+                x='rating_count',
+                y='avg_rating',
+                title='Movie Popularity vs Average Rating',
+                labels={'rating_count': 'Number of Ratings', 'avg_rating': 'Average Rating'},
+                opacity=0.6
+            )
 
-        # Convert plots to JSON
-        plots = [fig1, fig2, fig3, fig4, fig5]
-        
-        # Add embedding visualization
-        user_sample = ratings_df['userId'].unique()[:100]
-        movie_sample = ratings_df['movieId'].unique()[:100]
-        
-        with torch.no_grad():
-            user_embeddings = model.user_embedding(torch.tensor(user_sample).to(device)).cpu().numpy()
-            movie_embeddings = model.movie_embedding(torch.tensor(movie_sample).to(device)).cpu().numpy()
-        
-        # Create t-SNE plot
-        from sklearn.manifold import TSNE
-        tsne = TSNE(n_components=2)
-        embeddings_2d = tsne.fit_transform(np.vstack([user_embeddings, movie_embeddings]))
-        
-        embedding_df = pd.DataFrame(
-            embeddings_2d,
-            columns=['x', 'y']
-        )
-        embedding_df['type'] = ['User'] * len(user_sample) + ['Movie'] * len(movie_sample)
-        
-        fig_embeddings = px.scatter(
-            embedding_df, 
-            x='x', 
-            y='y', 
-            color='type',
-            title='User and Movie Embeddings Visualization'
-        )
-        
-        # Add to plots list
-        plots.append(fig_embeddings)
-        
-        graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
-        return render_template('visualize.html', graphJSON=graphJSON)
+            # Convert plots to JSON
+            plots = [fig1, fig2, fig3, fig4, fig5]
+            
+            # Add embedding visualization
+            user_sample = ratings_df['userId'].unique()[:100]
+            movie_sample = ratings_df['movieId'].unique()[:100]
+            
+            with torch.no_grad():
+                user_embeddings = model.user_embedding(torch.tensor(user_sample).to(device)).cpu().numpy()
+                movie_embeddings = model.movie_embedding(torch.tensor(movie_sample).to(device)).cpu().numpy()
+            
+            # Create t-SNE plot
+            from sklearn.manifold import TSNE
+            tsne = TSNE(n_components=2)
+            embeddings_2d = tsne.fit_transform(np.vstack([user_embeddings, movie_embeddings]))
+            
+            embedding_df = pd.DataFrame(
+                embeddings_2d,
+                columns=['x', 'y']
+            )
+            embedding_df['type'] = ['User'] * len(user_sample) + ['Movie'] * len(movie_sample)
+            
+            fig_embeddings = px.scatter(
+                embedding_df, 
+                x='x', 
+                y='y', 
+                color='type',
+                title='User and Movie Embeddings Visualization'
+            )
+            
+            # Add to plots list
+            plots.append(fig_embeddings)
+            
+            graphJSON = json.dumps([fig.to_dict() for fig in plots], cls=plotly.utils.PlotlyJSONEncoder)
+            return render_template('visualize.html', graphJSON=graphJSON)
+        except Exception as e:
+            app.logger.error(f"Error in visualization: {str(e)}")
+            return render_template('error.html', message="Error generating visualizations")
 
     @app.route('/about')
     def about():
