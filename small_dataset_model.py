@@ -431,8 +431,8 @@ def main():
         
         # Load and preprocess data
         print("Loading data...")
-        ratings_df = pd.read_csv("databases/ml-latest-small/ratings.csv")
-        movies_df = pd.read_csv("databases/ml-latest-small/movies.csv")
+        ratings_df = pd.read_csv("data/ratings.csv")
+        movies_df = pd.read_csv("data/movies.csv")
         
         # Encode user and movie IDs
         user_encoder = LabelEncoder()

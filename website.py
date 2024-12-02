@@ -11,8 +11,8 @@ import numpy as np
 
 def load_model_and_data():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ratings_df = pd.read_csv("databases/ml-latest-small/ratings.csv")
-    movies_df = pd.read_csv("databases/ml-latest-small/movies.csv")
+    ratings_df = pd.read_csv("data/ratings.csv")
+    movies_df = pd.read_csv("data/movies.csv")
     
     user_encoder = LabelEncoder()
     movie_encoder = LabelEncoder()
