@@ -101,4 +101,4 @@ python website.py
 - Paul Kanyuch
 
 ## This project has been deployed!
-You can access the deployed project at [MovieLens Recommender System](https://movielens-recommender-system-52253e175e9b.herokuapp.com/recommend)
+You can access the deployed project at [MovieLens Recommender System](https://movielens-recommender-system-52253e175e9b.herokuapp.com)
