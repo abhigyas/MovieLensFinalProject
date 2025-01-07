@@ -167,21 +167,4 @@ databases/ml-latest/links.csv
 databases/ml-latest/movies.csv
 databases/ml-latest/ratings.csv
 databases/ml-latest/tags.csv
-databases/ml-latest-small/links.csv
-databases/ml-latest-small/movies.csv
-databases/ml-latest-small/ratings.csv
-databases/ml-latest-small/tags.csv
 databases/ml-latest/README.txt
-databases/ml-latest-small/README.txt
-/databases/
-# /data/
-# *.csv
-data/*
-!data/ratings.csv
-!data/movies.csv
-!data/links.csv
-!data/tags.csv
-*.pth
-small_dataset_model.py
-training_history.png
-/presentation/
